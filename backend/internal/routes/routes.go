@@ -13,5 +13,7 @@ func SetupRoutes(mux *http.ServeMux, mealHandler *handlers.MealHandler) {
 
 	// Meal routes
 	mux.HandleFunc("GET /meals", mealHandler.GetMeals)
+	mux.HandleFunc("GET /meals/{id}", mealHandler.GetMealByID)
 	mux.HandleFunc("POST /meals", mealHandler.CreateMeal)
+	mux.HandleFunc("DELETE /meals/{id}", mealHandler.DeleteMeal)
 }
