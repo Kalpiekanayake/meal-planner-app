@@ -21,16 +21,19 @@ func main() {
 
 	// 2. Setup domain-specific repositories
 	mealRepo := repository.NewMealRepository(prismaRepo)
+	ingredientRepo := repository.NewIngredientRepository(prismaRepo)
 
 	// 3. Setup services
 	mealService := services.NewMealService(mealRepo)
+	ingredientService := services.NewIngredientService(ingredientRepo)
 
 	// 4. Setup handlers
 	mealHandler := handlers.NewMealHandler(mealService)
+	ingredientHandler := handlers.NewIngredientHandler(ingredientService)
 
 	// 5. Setup router
 	mux := http.NewServeMux()
-	routes.SetupRoutes(mux, mealHandler)
+	routes.SetupRoutes(mux, mealHandler, ingredientHandler)
 
 	// 6. Start server
 	port := os.Getenv("PORT")
