@@ -8,12 +8,13 @@ datasource db {
 }
 
 model Meal {
-  id          String       @id @default(cuid())
-  name        String
-  description String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  ingredients Ingredient[]
+  id             String       @id @default(cuid())
+  name           String
+  description    String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  ingredients    Ingredient[]
+  plannerEntries Planner[]
 }
 
 model Ingredient {
@@ -21,4 +22,13 @@ model Ingredient {
   name      String   @unique
   createdAt DateTime @default(now())
   meals     Meal[]
+}
+
+model Planner {
+  id        String   @id @default(cuid())
+  dayOfWeek String // e.g., Monday, Tuesday...
+  mealType  String // e.g., Breakfast, Lunch, Dinner
+  meal      Meal     @relation(fields: [mealId], references: [id])
+  mealId    String
+  createdAt DateTime @default(now())
 }
