@@ -23,20 +23,23 @@ func main() {
 	mealRepo := repository.NewMealRepository(prismaRepo)
 	ingredientRepo := repository.NewIngredientRepository(prismaRepo)
 	plannerRepo := repository.NewPlannerRepository(prismaRepo)
+	notifyRepo := repository.NewNotificationRepository(prismaRepo)
 
 	// 3. Setup services
 	mealService := services.NewMealService(mealRepo)
 	ingredientService := services.NewIngredientService(ingredientRepo)
 	plannerService := services.NewPlannerService(plannerRepo)
+	notifyService := services.NewNotificationService(notifyRepo, plannerRepo, mealRepo, prismaRepo.Client)
 
 	// 4. Setup handlers
 	mealHandler := handlers.NewMealHandler(mealService)
 	ingredientHandler := handlers.NewIngredientHandler(ingredientService)
 	plannerHandler := handlers.NewPlannerHandler(plannerService)
+	notifyHandler := handlers.NewNotificationHandler(notifyService, ingredientService)
 
 	// 5. Setup router
 	mux := http.NewServeMux()
-	routes.SetupRoutes(mux, mealHandler, ingredientHandler, plannerHandler)
+	routes.SetupRoutes(mux, mealHandler, ingredientHandler, plannerHandler, notifyHandler)
 
 	// 6. Start server
 	port := os.Getenv("PORT")

@@ -10,6 +10,15 @@ type IngredientRepository interface {
 	GetAllIngredients(ctx context.Context) ([]db.IngredientModel, error)
 	DeleteIngredient(ctx context.Context, id string) (*db.IngredientModel, error)
 	AddIngredientToMeal(ctx context.Context, mealID string, ingredientID string) (*db.MealModel, error)
+	UpdateIngredientAvailability(ctx context.Context, id string, isAvailable bool) (*db.IngredientModel, error)
+}
+
+func (r *ingredientRepo) UpdateIngredientAvailability(ctx context.Context, id string, isAvailable bool) (*db.IngredientModel, error) {
+	return r.repo.Client.Ingredient.FindUnique(
+		db.Ingredient.ID.Equals(id),
+	).Update(
+		db.Ingredient.IsAvailable.Set(isAvailable),
+	).Exec(ctx)
 }
 
 type ingredientRepo struct {

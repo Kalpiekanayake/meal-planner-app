@@ -11,6 +11,11 @@ type IngredientService interface {
 	GetIngredients(ctx context.Context) ([]db.IngredientModel, error)
 	RemoveIngredient(ctx context.Context, id string) (*db.IngredientModel, error)
 	LinkToMeal(ctx context.Context, mealID string, ingredientID string) (*db.MealModel, error)
+	UpdateAvailability(ctx context.Context, id string, isAvailable bool) (*db.IngredientModel, error)
+}
+
+func (s *ingredientService) UpdateAvailability(ctx context.Context, id string, isAvailable bool) (*db.IngredientModel, error) {
+	return s.repo.UpdateIngredientAvailability(ctx, id, isAvailable)
 }
 
 type ingredientService struct {

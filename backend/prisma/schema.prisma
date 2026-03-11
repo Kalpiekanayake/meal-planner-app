@@ -18,17 +18,26 @@ model Meal {
 }
 
 model Ingredient {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  createdAt DateTime @default(now())
-  meals     Meal[]
+  id          String   @id @default(cuid())
+  name        String   @unique
+  isAvailable Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  meals       Meal[]
 }
 
 model Planner {
   id        String   @id @default(cuid())
-  dayOfWeek String // e.g., Monday, Tuesday...
-  mealType  String // e.g., Breakfast, Lunch, Dinner
+  dayOfWeek String
+  mealType  String
   meal      Meal     @relation(fields: [mealId], references: [id])
   mealId    String
   createdAt DateTime @default(now())
+}
+
+model Notification {
+  id                 String   @id @default(cuid())
+  dayOfWeek          String
+  mealType           String
+  missingIngredients String   // Stored as a comma-separated string for simplicity
+  createdAt          DateTime @default(now())
 }
