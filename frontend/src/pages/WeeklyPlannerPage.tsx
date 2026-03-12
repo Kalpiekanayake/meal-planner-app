@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { api } from '../api/api';
-import { Calendar, Trash2, Plus, ChevronLeft, ChevronRight, Utensils, ShoppingCart, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Calendar, Trash2, Plus, ChevronLeft, ChevronRight, Utensils, ShoppingCart, AlertTriangle, CheckCircle2, Search, X } from 'lucide-react';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const MEAL_TYPES = ['Breakfast', 'Lunch', 'Dinner'];
@@ -10,18 +10,46 @@ const WeeklyPlannerPage: React.FC = () => {
   const { meals, planner, refreshData, loading, showToast, addMissingIngredientsToShoppingList } = useAppContext();
   const [day, setDay] = useState('Monday');
   const [mealType, setMealType] = useState('Lunch');
-  const [mealId, setMealId] = useState('');
+  const [mealSearch, setMealSearch] = useState('');
+  const [selectedMealId, setSelectedMealId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleCreateEntry = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!mealId) return;
+    const finalMealName = mealSearch.trim();
+    if (!finalMealName) return;
+    
     setIsSubmitting(true);
     try {
-      await api.createPlannerEntry(day, mealType, mealId);
-      showToast('Added to your schedule!', 'success');
-      setMealId('');
+      // 1. Get or create the meal first
+      const meal = await api.getOrCreateMeal(finalMealName);
+      
+      // 2. Add to planner
+      await api.createPlannerEntry(day, mealType, meal.id);
+      
+      showToast(
+        meals.find(m => m.id === meal.id) 
+          ? 'Added to your schedule!' 
+          : `Created "${meal.name}" and added to schedule!`, 
+        'success'
+      );
+      
+      setMealSearch('');
+      setSelectedMealId(null);
       setShowQuickAdd(false);
       refreshData();
     } catch (err) {
@@ -46,6 +74,12 @@ const WeeklyPlannerPage: React.FC = () => {
     if (!meal || !meal.ingredients) return 0;
     return meal.ingredients.filter(ing => !ing.isAvailable).length;
   };
+
+  const filteredMeals = meals.filter(m => 
+    m.name.toLowerCase().includes(mealSearch.toLowerCase())
+  );
+
+  const exactMatch = meals.find(m => m.name.toLowerCase() === mealSearch.toLowerCase().trim());
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center h-64 gap-4">
@@ -77,7 +111,7 @@ const WeeklyPlannerPage: React.FC = () => {
           <h2 className="text-xl font-black mb-6 flex items-center gap-2 text-slate-800">
             <Calendar size={24} className="text-indigo-600" /> Schedule a Meal
           </h2>
-          <form onSubmit={handleCreateEntry} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <form onSubmit={handleCreateEntry} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="space-y-2">
               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Day</label>
               <select 
@@ -98,27 +132,86 @@ const WeeklyPlannerPage: React.FC = () => {
                 {MEAL_TYPES.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
             </div>
-            <div className="space-y-2">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Meal</label>
-              <select 
-                value={mealId} 
-                onChange={(e) => setMealId(e.target.value)} 
-                className="w-full bg-slate-50 border-slate-100 rounded-2xl p-4 font-bold text-slate-700 focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 outline-none transition-all appearance-none cursor-pointer"
-              >
-                <option value="">Choose a meal...</option>
-                {meals.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-              </select>
+            <div className="space-y-2 relative" ref={dropdownRef}>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Meal Name</label>
+              <div className="relative">
+                <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input 
+                  type="text"
+                  value={mealSearch}
+                  onChange={(e) => {
+                    setMealSearch(e.target.value);
+                    setShowDropdown(true);
+                  }}
+                  onFocus={() => setShowDropdown(true)}
+                  placeholder="Type or select a meal..."
+                  className="w-full pl-12 pr-4 py-4 bg-slate-50 border-slate-100 rounded-2xl font-bold text-slate-700 focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 outline-none transition-all"
+                />
+              </div>
+              
+              {showDropdown && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-slate-100 z-50 max-h-60 overflow-y-auto py-2">
+                  {filteredMeals.length > 0 ? (
+                    filteredMeals.map(m => (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => {
+                          setMealSearch(m.name);
+                          setSelectedMealId(m.id);
+                          setShowDropdown(false);
+                        }}
+                        className="w-full text-left px-6 py-3 hover:bg-indigo-50 flex items-center justify-between group"
+                      >
+                        <span className="font-bold text-slate-700">{m.name}</span>
+                        <ChevronRight size={14} className="text-slate-300 group-hover:text-indigo-500 transition-colors" />
+                      </button>
+                    ))
+                  ) : mealSearch.trim() ? (
+                    <div className="px-6 py-3 text-slate-400 italic text-sm">
+                      No matching meals found.
+                    </div>
+                  ) : (
+                    <div className="px-6 py-3 text-slate-400 italic text-sm">
+                      Start typing to search...
+                    </div>
+                  )}
+                  
+                  {mealSearch.trim() && !exactMatch && (
+                    <button
+                      type="button"
+                      onClick={() => setShowDropdown(false)}
+                      className="w-full text-left px-6 py-4 bg-indigo-50/50 hover:bg-indigo-100 border-t border-indigo-50 flex items-center gap-3"
+                    >
+                      <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white shrink-0">
+                        <Plus size={16} />
+                      </div>
+                      <div>
+                        <p className="text-xs font-black text-indigo-600 uppercase tracking-widest">Create New Meal</p>
+                        <p className="font-bold text-slate-700">"{mealSearch}"</p>
+                      </div>
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
             <div className="flex items-end">
               <button
                 type="submit"
-                disabled={isSubmitting || !mealId}
+                disabled={isSubmitting || !mealSearch.trim()}
                 className="w-full bg-slate-900 text-white rounded-2xl py-4 font-black shadow-xl shadow-slate-100 hover:bg-black transition-all active:scale-95 disabled:opacity-50"
               >
-                {isSubmitting ? 'Adding...' : 'Add to Schedule'}
+                {isSubmitting ? 'Processing...' : 'Add to Schedule'}
               </button>
             </div>
           </form>
+          
+          {mealSearch.trim() && exactMatch && (
+            <div className="mt-4 flex items-center gap-2 text-indigo-600 bg-indigo-50 px-4 py-2 rounded-xl text-xs font-bold animate-in fade-in slide-in-from-left-2">
+              <CheckCircle2 size={14} />
+              <span>Matching meal found in your library: <strong>{exactMatch.name}</strong></span>
+            </div>
+          )}
         </div>
       )}
 

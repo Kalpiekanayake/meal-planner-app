@@ -41,6 +41,11 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ name }),
     }),
+  getOrCreateMeal: (name: string) =>
+    fetcher<Meal>('/meals/get-or-create', {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    }),
   deleteMeal: (id: string) => fetcher<void>(`/meals/${id}`, { method: 'DELETE' }),
 
   // Ingredients

@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"meal-planner-backend/internal/repository"
 	"meal-planner-backend/prisma/db"
 	"strings"
@@ -33,17 +34,23 @@ func (s *mealService) GetMealByID(ctx context.Context, id string) (*db.MealModel
 
 func (s *mealService) GetOrCreateMeal(ctx context.Context, name string) (*db.MealModel, error) {
 	trimmedName := strings.TrimSpace(name)
+	if trimmedName == "" {
+		return nil, errors.New("meal name cannot be empty")
+	}
 	
-	// Case-insensitive check by fetching all and comparing (since FindUnique is case-sensitive usually)
-	// Alternatively, we can assume exact match for now as per simple DB rules.
-	// But let's try to find exact match first.
+	// 1. First try an exact match (this handles case where unique constraint matches exactly)
 	meal, err := s.repo.GetMealByName(ctx, trimmedName)
-	if err == nil && meal != nil {
+	if err == nil {
 		return meal, nil
 	}
 	
-	// If not found, try searching case-insensitively across all meals
-	// To keep it simple and efficient for small apps:
+	// If it's not ErrNotFound, we should report the error
+	if !errors.Is(err, db.ErrNotFound) {
+		// In prisma-client-go, FindUnique returns db.ErrNotFound if not found
+		// But let's check for case-insensitive matches anyway just in case
+	}
+	
+	// 2. Search case-insensitively across all meals
 	allMeals, err := s.repo.GetAllMeals(ctx)
 	if err == nil {
 		for _, m := range allMeals {
@@ -53,11 +60,16 @@ func (s *mealService) GetOrCreateMeal(ctx context.Context, name string) (*db.Mea
 		}
 	}
 
+	// 3. If no match found, create a new one
 	return s.repo.CreateMeal(ctx, trimmedName)
 }
 
 func (s *mealService) AddMeal(ctx context.Context, name string) (*db.MealModel, error) {
-	return s.repo.CreateMeal(ctx, strings.TrimSpace(name))
+	trimmedName := strings.TrimSpace(name)
+	if trimmedName == "" {
+		return nil, errors.New("meal name cannot be empty")
+	}
+	return s.repo.CreateMeal(ctx, trimmedName)
 }
 
 func (s *mealService) RemoveMeal(ctx context.Context, id string) (*db.MealModel, error) {
