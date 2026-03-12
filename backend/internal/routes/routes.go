@@ -28,6 +28,7 @@ func SetupRoutes(
 	// Ingredient routes
 	mux.HandleFunc("GET /ingredients", ingredientHandler.GetIngredients)
 	mux.HandleFunc("POST /ingredients", ingredientHandler.CreateIngredient)
+	mux.HandleFunc("POST /ingredients/get-or-create", ingredientHandler.GetOrCreateIngredient)
 	mux.HandleFunc("PATCH /ingredients/{id}/availability", ingredientHandler.UpdateAvailability)
 	mux.HandleFunc("DELETE /ingredients/{id}", ingredientHandler.DeleteIngredient)
 

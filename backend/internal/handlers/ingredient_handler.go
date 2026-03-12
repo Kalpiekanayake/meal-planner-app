@@ -47,6 +47,23 @@ func (h *IngredientHandler) CreateIngredient(w http.ResponseWriter, r *http.Requ
 	json.NewEncoder(w).Encode(ingredient)
 }
 
+func (h *IngredientHandler) GetOrCreateIngredient(w http.ResponseWriter, r *http.Request) {
+	var req createIngredientRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	ingredient, err := h.service.GetOrCreateIngredient(r.Context(), req.Name)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(ingredient)
+}
+
 type updateIngredientAvailabilityRequest struct {
 	IsAvailable bool `json:"isAvailable"`
 }

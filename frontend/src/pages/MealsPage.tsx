@@ -1,16 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { api } from '../api/api';
-import { Plus, Trash2, Link as LinkIcon, Utensils, Clock, User, ChevronRight, X, Search, Info } from 'lucide-react';
+import { Plus, Trash2, Link as LinkIcon, Utensils, Clock, User, ChevronRight, X, Search, Info, CheckCircle2 } from 'lucide-react';
 
 const MealsPage: React.FC = () => {
   const { meals, ingredients, refreshData, loading, showToast } = useAppContext();
   const [name, setName] = useState('');
   const [selectedMealId, setSelectedMealId] = useState<string | null>(null);
-  const [selectedIngredientId, setSelectedIngredientId] = useState('');
+  const [ingredientSearch, setIngredientSearch] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+  
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleCreateMeal = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,22 +53,47 @@ const MealsPage: React.FC = () => {
     }
   };
 
-  const handleLinkIngredient = async () => {
-    if (!selectedMealId || !selectedIngredientId) return;
+  const handleLinkIngredient = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const finalIngName = ingredientSearch.trim();
+    if (!selectedMealId || !finalIngName) return;
+    
+    setIsSubmitting(true);
     try {
-      await api.linkIngredientToMeal(selectedMealId, selectedIngredientId);
-      showToast('Ingredient linked!', 'success');
-      setSelectedIngredientId('');
+      // 1. Get or create ingredient
+      const ingredient = await api.getOrCreateIngredient(finalIngName);
+      
+      // 2. Link to meal
+      await api.linkIngredientToMeal(selectedMealId, ingredient.id);
+      
+      showToast(
+        ingredients.find(i => i.id === ingredient.id)
+          ? 'Ingredient linked!'
+          : `Created "${ingredient.name}" and linked to meal!`,
+        'success'
+      );
+      
+      setIngredientSearch('');
       setSelectedMealId(null);
+      setShowDropdown(false);
       refreshData();
     } catch (err) {
       showToast('Failed to link ingredient', 'error');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const filteredMeals = meals.filter(meal => 
     meal.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const filteredIngredients = ingredients.filter(i => 
+    i.name.toLowerCase().includes(ingredientSearch.toLowerCase()) &&
+    !meals.find(m => m.id === selectedMealId)?.ingredients?.find(mi => mi.id === i.id)
+  );
+
+  const exactIngMatch = ingredients.find(i => i.name.toLowerCase() === ingredientSearch.toLowerCase().trim());
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center h-64 gap-4">
@@ -175,7 +213,11 @@ const MealsPage: React.FC = () => {
             </div>
 
             <button
-              onClick={() => setSelectedMealId(meal.id)}
+              onClick={() => {
+                setSelectedMealId(meal.id);
+                setIngredientSearch('');
+                setShowDropdown(false);
+              }}
               className="mt-8 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-indigo-600 bg-indigo-50/50 hover:bg-indigo-600 hover:text-white rounded-2xl py-4 transition-all duration-300 group/btn"
             >
               <Plus size={14} className="group-hover/btn:rotate-90 transition-transform" /> 
@@ -198,45 +240,100 @@ const MealsPage: React.FC = () => {
       {/* Modern Link Ingredient Modal */}
       {selectedMealId && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[60] animate-in fade-in duration-300">
-          <div className="bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-300 relative overflow-hidden">
+          <div className="bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-300 relative overflow-hidden" ref={dropdownRef}>
             <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-bl-full -z-10 opacity-50"></div>
             
-            <h3 className="text-3xl font-black mb-1 text-slate-800 tracking-tight">Add Ingredient</h3>
+            <h3 className="text-3xl font-black mb-1 text-slate-800 tracking-tight">Link Ingredient</h3>
             <p className="text-slate-400 text-sm font-medium mb-8">Linking to: <span className="text-indigo-600 font-bold">{meals.find(m => m.id === selectedMealId)?.name}</span></p>
             
-            <div className="space-y-8">
-              <div className="space-y-2">
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Select Ingredient</label>
-                <select
-                  value={selectedIngredientId}
-                  onChange={(e) => setSelectedIngredientId(e.target.value)}
-                  className="w-full bg-slate-50 border-slate-100 rounded-2xl p-4 font-bold text-slate-700 focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 outline-none transition-all appearance-none cursor-pointer"
-                >
-                  <option value="">Choose from library...</option>
-                  {ingredients
-                    .filter(ing => !meals.find(m => m.id === selectedMealId)?.ingredients?.find(mi => mi.id === ing.id))
-                    .map((ing) => (
-                    <option key={ing.id} value={ing.id}>{ing.name}</option>
-                  ))}
-                </select>
+            <form onSubmit={handleLinkIngredient} className="space-y-8">
+              <div className="space-y-2 relative">
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Search or Type Name</label>
+                <div className="relative">
+                  <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={ingredientSearch}
+                    onChange={(e) => {
+                      setIngredientSearch(e.target.value);
+                      setShowDropdown(true);
+                    }}
+                    onFocus={() => setShowDropdown(true)}
+                    placeholder="e.g. Garlic, Onions..."
+                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border-slate-100 rounded-2xl font-bold text-slate-700 focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 outline-none transition-all"
+                  />
+                </div>
+                
+                {showDropdown && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-slate-100 z-50 max-h-60 overflow-y-auto py-2">
+                    {filteredIngredients.length > 0 ? (
+                      filteredIngredients.map(i => (
+                        <button
+                          key={i.id}
+                          type="button"
+                          onClick={() => {
+                            setIngredientSearch(i.name);
+                            setShowDropdown(false);
+                          }}
+                          className="w-full text-left px-6 py-3 hover:bg-indigo-50 flex items-center justify-between group"
+                        >
+                          <span className="font-bold text-slate-700">{i.name}</span>
+                          <ChevronRight size={14} className="text-slate-300 group-hover:text-indigo-500 transition-colors" />
+                        </button>
+                      ))
+                    ) : ingredientSearch.trim() ? (
+                      <div className="px-6 py-3 text-slate-400 italic text-sm">
+                        No new matching ingredients.
+                      </div>
+                    ) : (
+                      <div className="px-6 py-3 text-slate-400 italic text-sm">
+                        Start typing to search...
+                      </div>
+                    )}
+                    
+                    {ingredientSearch.trim() && !exactIngMatch && (
+                      <button
+                        type="button"
+                        onClick={() => setShowDropdown(false)}
+                        className="w-full text-left px-6 py-4 bg-indigo-50/50 hover:bg-indigo-100 border-t border-indigo-50 flex items-center gap-3"
+                      >
+                        <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white shrink-0">
+                          <Plus size={16} />
+                        </div>
+                        <div>
+                          <p className="text-xs font-black text-indigo-600 uppercase tracking-widest">Create New Ingredient</p>
+                          <p className="font-bold text-slate-700">"{ingredientSearch}"</p>
+                        </div>
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
               
               <div className="flex gap-4 pt-2">
                 <button
-                  onClick={handleLinkIngredient}
-                  disabled={!selectedIngredientId}
+                  type="submit"
+                  disabled={isSubmitting || !ingredientSearch.trim()}
                   className="flex-[2] bg-indigo-600 text-white rounded-2xl py-4 font-black shadow-xl shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50"
                 >
-                  Confirm Link
+                  {isSubmitting ? 'Linking...' : 'Confirm Link'}
                 </button>
                 <button
+                  type="button"
                   onClick={() => setSelectedMealId(null)}
                   className="flex-1 bg-slate-100 text-slate-500 rounded-2xl py-4 font-black hover:bg-slate-200 active:scale-95 transition-all"
                 >
                   Cancel
                 </button>
               </div>
-            </div>
+            </form>
+            
+            {ingredientSearch.trim() && exactIngMatch && (
+              <div className="mt-4 flex items-center gap-2 text-indigo-600 bg-indigo-50 px-4 py-2 rounded-xl text-xs font-bold animate-in fade-in slide-in-from-left-2">
+                <CheckCircle2 size={14} />
+                <span>Existing ingredient found: <strong>{exactIngMatch.name}</strong></span>
+              </div>
+            )}
           </div>
         </div>
       )}

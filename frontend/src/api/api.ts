@@ -55,6 +55,11 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ name }),
     }),
+  getOrCreateIngredient: (name: string) =>
+    fetcher<Ingredient>('/ingredients/get-or-create', {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    }),
   updateIngredientAvailability: (id: string, isAvailable: boolean) =>
     fetcher<Ingredient>(`/ingredients/${id}/availability`, {
       method: 'PATCH',
