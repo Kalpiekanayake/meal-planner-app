@@ -4,14 +4,20 @@ import (
 	"fmt"
 	"log"
 	"meal-planner-backend/internal/handlers"
+	"meal-planner-backend/internal/middleware"
 	"meal-planner-backend/internal/repository"
 	"meal-planner-backend/internal/routes"
 	"meal-planner-backend/internal/services"
 	"net/http"
 	"os"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	// Load .env file
+	godotenv.Load()
+
 	// 1. Setup repository (Prisma)
 	prismaRepo, err := repository.NewPrismaRepository()
 	if err != nil {
@@ -20,6 +26,7 @@ func main() {
 	defer prismaRepo.Close()
 
 	// 2. Setup domain-specific repositories
+	userRepo := repository.NewUserRepository(prismaRepo)
 	mealRepo := repository.NewMealRepository(prismaRepo)
 	ingredientRepo := repository.NewIngredientRepository(prismaRepo)
 	plannerRepo := repository.NewPlannerRepository(prismaRepo)
@@ -27,6 +34,7 @@ func main() {
 	shoppingRepo := repository.NewShoppingRepository(prismaRepo)
 
 	// 3. Setup services
+	authService := services.NewAuthService(userRepo)
 	mealService := services.NewMealService(mealRepo)
 	ingredientService := services.NewIngredientService(ingredientRepo)
 	plannerService := services.NewPlannerService(plannerRepo)
@@ -34,15 +42,26 @@ func main() {
 	notifyService := services.NewNotificationService(notifyRepo, plannerRepo, shoppingRepo, prismaRepo.Client)
 
 	// 4. Setup handlers
+	authHandler := handlers.NewAuthHandler(authService)
 	mealHandler := handlers.NewMealHandler(mealService)
 	ingredientHandler := handlers.NewIngredientHandler(ingredientService)
 	plannerHandler := handlers.NewPlannerHandler(plannerService)
-	notifyHandler := handlers.NewNotificationHandler(notifyService)
+	notificationHandler := handlers.NewNotificationHandler(notifyService)
 	shoppingHandler := handlers.NewShoppingHandler(shoppingService)
 
 	// 5. Setup router
 	mux := http.NewServeMux()
-	routes.SetupRoutes(mux, mealHandler, ingredientHandler, plannerHandler, notifyHandler, shoppingHandler)
+	authMiddleware := middleware.AuthMiddleware(authService)
+	routes.SetupRoutes(
+		mux,
+		authHandler,
+		mealHandler,
+		ingredientHandler,
+		plannerHandler,
+		notificationHandler,
+		shoppingHandler,
+		authMiddleware,
+	)
 
 	// Add CORS middleware
 	corsMux := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

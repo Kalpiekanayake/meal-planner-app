@@ -7,21 +7,46 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id            String         @id @default(cuid())
+  name          String
+  email         String         @unique
+  password      String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  meals         Meal[]
+  ingredients   Ingredient[]
+  planner       Planner[]
+  shoppingItems ShoppingItem[]
+  notifications Notification[]
+}
+
 model Meal {
   id             String       @id @default(cuid())
-  name           String       @unique
+  name           String
+  user           User         @relation(fields: [userId], references: [id])
+  userId         String
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   ingredients    Ingredient[]
   plannerEntries Planner[]
+
+  @@unique([name, userId])
 }
 
 model Ingredient {
   id          String   @id @default(cuid())
-  name        String   @unique
+  name        String
+  category    String   @default("Other") // Dairy, Vegetables, Fruits, etc.
+  quantity    String?
+  unit        String?
   isAvailable Boolean  @default(true)
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
   createdAt   DateTime @default(now())
   meals       Meal[]
+
+  @@unique([name, userId])
 }
 
 model Planner {
@@ -30,25 +55,32 @@ model Planner {
   mealType  String
   meal      Meal     @relation(fields: [mealId], references: [id])
   mealId    String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
   createdAt DateTime @default(now())
 }
 
 model ShoppingItem {
   id         String    @id @default(cuid())
   name       String
+  category   String    @default("Other") // Dairy, Vegetables, Fruits, etc.
   quantity   String?
   note       String?
   status     String    @default("pending") // pending or bought
   targetDate DateTime?
+  user       User      @relation(fields: [userId], references: [id])
+  userId     String
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 }
 
 model Notification {
-  id                 String   @id @default(cuid())
-  title              String
-  message            String
-  type               String   // shopping, missing_ingredient, forgotten_item
-  isRead             Boolean  @default(false)
-  createdAt          DateTime @default(now())
+  id        String   @id @default(cuid())
+  title     String
+  message   String
+  type      String // shopping, missing_ingredient, forgotten_item
+  isRead    Boolean  @default(false)
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  createdAt DateTime @default(now())
 }

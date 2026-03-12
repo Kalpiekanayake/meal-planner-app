@@ -8,4 +8,8 @@ require (
 	github.com/steebchen/prisma-client-go v0.47.0
 )
 
-require go.mongodb.org/mongo-driver/v2 v2.0.1 // indirect
+require (
+	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
+	go.mongodb.org/mongo-driver/v2 v2.0.1 // indirect
+	golang.org/x/crypto v0.49.0 // indirect
+)

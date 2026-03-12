@@ -17,7 +17,8 @@ func NewNotificationHandler(service services.NotificationService) *NotificationH
 }
 
 func (h *NotificationHandler) Generate(w http.ResponseWriter, r *http.Request) {
-	err := h.service.GenerateNotifications(r.Context())
+	userID := r.Context().Value("user_id").(string)
+	err := h.service.GenerateNotifications(r.Context(), userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -28,7 +29,8 @@ func (h *NotificationHandler) Generate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *NotificationHandler) List(w http.ResponseWriter, r *http.Request) {
-	notifications, err := h.service.GetNotifications(r.Context())
+	userID := r.Context().Value("user_id").(string)
+	notifications, err := h.service.GetNotifications(r.Context(), userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -39,13 +41,14 @@ func (h *NotificationHandler) List(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *NotificationHandler) MarkAsRead(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(string)
 	id := r.PathValue("id")
 	if id == "" {
 		http.Error(w, "missing notification ID", http.StatusBadRequest)
 		return
 	}
 
-	notification, err := h.service.MarkAsRead(r.Context(), id)
+	notification, err := h.service.MarkAsRead(r.Context(), id, userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -56,13 +59,14 @@ func (h *NotificationHandler) MarkAsRead(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *NotificationHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(string)
 	id := r.PathValue("id")
 	if id == "" {
 		http.Error(w, "missing notification ID", http.StatusBadRequest)
 		return
 	}
 
-	_, err := h.service.RemoveNotification(r.Context(), id)
+	_, err := h.service.RemoveNotification(r.Context(), id, userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

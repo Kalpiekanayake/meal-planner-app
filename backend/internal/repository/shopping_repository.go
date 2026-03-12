@@ -7,11 +7,11 @@ import (
 )
 
 type ShoppingRepository interface {
-	GetAllItems(ctx context.Context) ([]db.ShoppingItemModel, error)
-	GetItemByID(ctx context.Context, id string) (*db.ShoppingItemModel, error)
-	CreateItem(ctx context.Context, name string, quantity *string, note *string, targetDate *time.Time) (*db.ShoppingItemModel, error)
-	UpdateItemStatus(ctx context.Context, id string, status string) (*db.ShoppingItemModel, error)
-	DeleteItem(ctx context.Context, id string) (*db.ShoppingItemModel, error)
+	GetAllItems(ctx context.Context, userID string) ([]db.ShoppingItemModel, error)
+	GetItemByID(ctx context.Context, id string, userID string) (*db.ShoppingItemModel, error)
+	CreateItem(ctx context.Context, name, category string, quantity *string, note *string, targetDate *time.Time, userID string) (*db.ShoppingItemModel, error)
+	UpdateItemStatus(ctx context.Context, id string, status string, userID string) (*db.ShoppingItemModel, error)
+	DeleteItem(ctx context.Context, id string, userID string) (*db.ShoppingItemModel, error)
 }
 
 type shoppingRepo struct {
@@ -22,20 +22,25 @@ func NewShoppingRepository(repo *PrismaRepository) ShoppingRepository {
 	return &shoppingRepo{repo: repo}
 }
 
-func (s *shoppingRepo) GetAllItems(ctx context.Context) ([]db.ShoppingItemModel, error) {
-	return s.repo.Client.ShoppingItem.FindMany().OrderBy(
+func (s *shoppingRepo) GetAllItems(ctx context.Context, userID string) ([]db.ShoppingItemModel, error) {
+	return s.repo.Client.ShoppingItem.FindMany(
+		db.ShoppingItem.UserID.Equals(userID),
+	).OrderBy(
+		db.ShoppingItem.Category.Order(db.SortOrderAsc),
 		db.ShoppingItem.CreatedAt.Order(db.SortOrderDesc),
 	).Exec(ctx)
 }
 
-func (s *shoppingRepo) GetItemByID(ctx context.Context, id string) (*db.ShoppingItemModel, error) {
+func (s *shoppingRepo) GetItemByID(ctx context.Context, id string, userID string) (*db.ShoppingItemModel, error) {
 	return s.repo.Client.ShoppingItem.FindUnique(
 		db.ShoppingItem.ID.Equals(id),
 	).Exec(ctx)
 }
 
-func (s *shoppingRepo) CreateItem(ctx context.Context, name string, quantity *string, note *string, targetDate *time.Time) (*db.ShoppingItemModel, error) {
-	var optional []db.ShoppingItemSetParam
+func (s *shoppingRepo) CreateItem(ctx context.Context, name, category string, quantity *string, note *string, targetDate *time.Time, userID string) (*db.ShoppingItemModel, error) {
+	optional := []db.ShoppingItemSetParam{
+		db.ShoppingItem.Category.Set(category),
+	}
 	if quantity != nil {
 		optional = append(optional, db.ShoppingItem.Quantity.Set(*quantity))
 	}
@@ -48,11 +53,14 @@ func (s *shoppingRepo) CreateItem(ctx context.Context, name string, quantity *st
 
 	return s.repo.Client.ShoppingItem.CreateOne(
 		db.ShoppingItem.Name.Set(name),
+		db.ShoppingItem.User.Link(
+			db.User.ID.Equals(userID),
+		),
 		optional...,
 	).Exec(ctx)
 }
 
-func (s *shoppingRepo) UpdateItemStatus(ctx context.Context, id string, status string) (*db.ShoppingItemModel, error) {
+func (s *shoppingRepo) UpdateItemStatus(ctx context.Context, id string, status string, userID string) (*db.ShoppingItemModel, error) {
 	return s.repo.Client.ShoppingItem.FindUnique(
 		db.ShoppingItem.ID.Equals(id),
 	).Update(
@@ -60,7 +68,7 @@ func (s *shoppingRepo) UpdateItemStatus(ctx context.Context, id string, status s
 	).Exec(ctx)
 }
 
-func (s *shoppingRepo) DeleteItem(ctx context.Context, id string) (*db.ShoppingItemModel, error) {
+func (s *shoppingRepo) DeleteItem(ctx context.Context, id string, userID string) (*db.ShoppingItemModel, error) {
 	return s.repo.Client.ShoppingItem.FindUnique(
 		db.ShoppingItem.ID.Equals(id),
 	).Delete().Exec(ctx)

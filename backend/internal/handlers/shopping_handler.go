@@ -16,7 +16,8 @@ func NewShoppingHandler(service services.ShoppingService) *ShoppingHandler {
 }
 
 func (h *ShoppingHandler) GetItems(w http.ResponseWriter, r *http.Request) {
-	items, err := h.service.GetItems(r.Context())
+	userID := r.Context().Value("user_id").(string)
+	items, err := h.service.GetItems(r.Context(), userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -28,19 +29,21 @@ func (h *ShoppingHandler) GetItems(w http.ResponseWriter, r *http.Request) {
 
 type createShoppingItemRequest struct {
 	Name       string     `json:"name"`
+	Category   string     `json:"category"`
 	Quantity   *string    `json:"quantity"`
 	Note       *string    `json:"note"`
 	TargetDate *time.Time `json:"targetDate"`
 }
 
 func (h *ShoppingHandler) CreateItem(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(string)
 	var req createShoppingItemRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	item, err := h.service.AddItem(r.Context(), req.Name, req.Quantity, req.Note, req.TargetDate)
+	item, err := h.service.AddItem(r.Context(), req.Name, req.Category, req.Quantity, req.Note, req.TargetDate, userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -52,13 +55,14 @@ func (h *ShoppingHandler) CreateItem(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ShoppingHandler) MarkAsBought(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(string)
 	id := r.PathValue("id")
 	if id == "" {
 		http.Error(w, "missing item ID", http.StatusBadRequest)
 		return
 	}
 
-	item, err := h.service.MarkAsBought(r.Context(), id)
+	item, err := h.service.MarkAsBought(r.Context(), id, userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -69,13 +73,14 @@ func (h *ShoppingHandler) MarkAsBought(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ShoppingHandler) DeleteItem(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(string)
 	id := r.PathValue("id")
 	if id == "" {
 		http.Error(w, "missing item ID", http.StatusBadRequest)
 		return
 	}
 
-	_, err := h.service.DeleteItem(r.Context(), id)
+	_, err := h.service.DeleteItem(r.Context(), id, userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

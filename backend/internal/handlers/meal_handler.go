@@ -15,7 +15,8 @@ func NewMealHandler(service services.MealService) *MealHandler {
 }
 
 func (h *MealHandler) GetMeals(w http.ResponseWriter, r *http.Request) {
-	meals, err := h.service.GetMeals(r.Context())
+	userID := r.Context().Value("user_id").(string)
+	meals, err := h.service.GetMeals(r.Context(), userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -26,13 +27,14 @@ func (h *MealHandler) GetMeals(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *MealHandler) GetMealByID(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(string)
 	id := r.PathValue("id")
 	if id == "" {
 		http.Error(w, "missing meal ID", http.StatusBadRequest)
 		return
 	}
 
-	meal, err := h.service.GetMealByID(r.Context(), id)
+	meal, err := h.service.GetMealByID(r.Context(), id, userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -52,13 +54,14 @@ type createMealRequest struct {
 }
 
 func (h *MealHandler) CreateMeal(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(string)
 	var req createMealRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	meal, err := h.service.AddMeal(r.Context(), req.Name)
+	meal, err := h.service.AddMeal(r.Context(), req.Name, userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -70,13 +73,14 @@ func (h *MealHandler) CreateMeal(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *MealHandler) GetOrCreateMeal(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(string)
 	var req createMealRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	meal, err := h.service.GetOrCreateMeal(r.Context(), req.Name)
+	meal, err := h.service.GetOrCreateMeal(r.Context(), req.Name, userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -87,13 +91,14 @@ func (h *MealHandler) GetOrCreateMeal(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *MealHandler) DeleteMeal(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(string)
 	id := r.PathValue("id")
 	if id == "" {
 		http.Error(w, "missing meal ID", http.StatusBadRequest)
 		return
 	}
 
-	_, err := h.service.RemoveMeal(r.Context(), id)
+	_, err := h.service.RemoveMeal(r.Context(), id, userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

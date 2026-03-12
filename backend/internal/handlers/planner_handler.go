@@ -21,13 +21,14 @@ type createPlannerRequest struct {
 }
 
 func (h *PlannerHandler) CreatePlannerEntry(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(string)
 	var req createPlannerRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	entry, err := h.service.AddPlannerEntry(r.Context(), req.DayOfWeek, req.MealType, req.MealID)
+	entry, err := h.service.AddPlannerEntry(r.Context(), req.DayOfWeek, req.MealType, req.MealID, userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -39,7 +40,8 @@ func (h *PlannerHandler) CreatePlannerEntry(w http.ResponseWriter, r *http.Reque
 }
 
 func (h *PlannerHandler) GetAllEntries(w http.ResponseWriter, r *http.Request) {
-	entries, err := h.service.GetAllEntries(r.Context())
+	userID := r.Context().Value("user_id").(string)
+	entries, err := h.service.GetAllEntries(r.Context(), userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -50,13 +52,14 @@ func (h *PlannerHandler) GetAllEntries(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *PlannerHandler) GetEntriesByDay(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(string)
 	day := r.PathValue("dayOfWeek")
 	if day == "" {
 		http.Error(w, "missing day of week", http.StatusBadRequest)
 		return
 	}
 
-	entries, err := h.service.GetEntriesByDay(r.Context(), day)
+	entries, err := h.service.GetEntriesByDay(r.Context(), day, userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -67,13 +70,14 @@ func (h *PlannerHandler) GetEntriesByDay(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *PlannerHandler) DeleteEntry(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(string)
 	id := r.PathValue("id")
 	if id == "" {
 		http.Error(w, "missing entry ID", http.StatusBadRequest)
 		return
 	}
 
-	_, err := h.service.RemoveEntry(r.Context(), id)
+	_, err := h.service.RemoveEntry(r.Context(), id, userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

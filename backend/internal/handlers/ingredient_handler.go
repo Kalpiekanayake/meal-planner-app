@@ -15,7 +15,8 @@ func NewIngredientHandler(service services.IngredientService) *IngredientHandler
 }
 
 func (h *IngredientHandler) GetIngredients(w http.ResponseWriter, r *http.Request) {
-	ingredients, err := h.service.GetIngredients(r.Context())
+	userID := r.Context().Value("user_id").(string)
+	ingredients, err := h.service.GetIngredients(r.Context(), userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -26,17 +27,21 @@ func (h *IngredientHandler) GetIngredients(w http.ResponseWriter, r *http.Reques
 }
 
 type createIngredientRequest struct {
-	Name string `json:"name"`
+	Name     string `json:"name"`
+	Category string `json:"category"`
+	Quantity string `json:"quantity"`
+	Unit     string `json:"unit"`
 }
 
 func (h *IngredientHandler) CreateIngredient(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(string)
 	var req createIngredientRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	ingredient, err := h.service.AddIngredient(r.Context(), req.Name)
+	ingredient, err := h.service.AddIngredient(r.Context(), req.Name, req.Category, req.Quantity, req.Unit, userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -48,13 +53,14 @@ func (h *IngredientHandler) CreateIngredient(w http.ResponseWriter, r *http.Requ
 }
 
 func (h *IngredientHandler) GetOrCreateIngredient(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(string)
 	var req createIngredientRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	ingredient, err := h.service.GetOrCreateIngredient(r.Context(), req.Name)
+	ingredient, err := h.service.GetOrCreateIngredient(r.Context(), req.Name, userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -69,6 +75,7 @@ type updateIngredientAvailabilityRequest struct {
 }
 
 func (h *IngredientHandler) UpdateAvailability(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(string)
 	id := r.PathValue("id")
 	if id == "" {
 		http.Error(w, "missing ingredient ID", http.StatusBadRequest)
@@ -81,7 +88,7 @@ func (h *IngredientHandler) UpdateAvailability(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	ingredient, err := h.service.UpdateAvailability(r.Context(), id, req.IsAvailable)
+	ingredient, err := h.service.UpdateAvailability(r.Context(), id, req.IsAvailable, userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -92,13 +99,14 @@ func (h *IngredientHandler) UpdateAvailability(w http.ResponseWriter, r *http.Re
 }
 
 func (h *IngredientHandler) DeleteIngredient(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(string)
 	id := r.PathValue("id")
 	if id == "" {
 		http.Error(w, "missing ingredient ID", http.StatusBadRequest)
 		return
 	}
 
-	_, err := h.service.RemoveIngredient(r.Context(), id)
+	_, err := h.service.RemoveIngredient(r.Context(), id, userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -108,6 +116,7 @@ func (h *IngredientHandler) DeleteIngredient(w http.ResponseWriter, r *http.Requ
 }
 
 func (h *IngredientHandler) LinkToMeal(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(string)
 	mealID := r.PathValue("mealId")
 	ingredientID := r.PathValue("ingredientId")
 
@@ -116,7 +125,7 @@ func (h *IngredientHandler) LinkToMeal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	meal, err := h.service.LinkToMeal(r.Context(), mealID, ingredientID)
+	meal, err := h.service.LinkToMeal(r.Context(), mealID, ingredientID, userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

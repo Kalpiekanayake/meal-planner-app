@@ -7,49 +7,64 @@ import (
 
 func SetupRoutes(
 	mux *http.ServeMux,
+	authHandler *handlers.AuthHandler,
 	mealHandler *handlers.MealHandler,
 	ingredientHandler *handlers.IngredientHandler,
 	plannerHandler *handlers.PlannerHandler,
 	notificationHandler *handlers.NotificationHandler,
 	shoppingHandler *handlers.ShoppingHandler,
+	authMiddleware func(http.Handler) http.Handler,
 ) {
 	// Health check
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("OK"))
 	})
 
+	// Auth routes (Public)
+	mux.HandleFunc("POST /auth/register", authHandler.Register)
+	mux.HandleFunc("POST /auth/login", authHandler.Login)
+
+	// Protected routes
+	protectedMux := http.NewServeMux()
+
+	// Auth Me
+	protectedMux.HandleFunc("GET /auth/me", authHandler.Me)
+
 	// Meal routes
-	mux.HandleFunc("GET /meals", mealHandler.GetMeals)
-	mux.HandleFunc("GET /meals/{id}", mealHandler.GetMealByID)
-	mux.HandleFunc("POST /meals", mealHandler.CreateMeal)
-	mux.HandleFunc("POST /meals/get-or-create", mealHandler.GetOrCreateMeal)
-	mux.HandleFunc("DELETE /meals/{id}", mealHandler.DeleteMeal)
+	protectedMux.HandleFunc("GET /meals", mealHandler.GetMeals)
+	protectedMux.HandleFunc("GET /meals/{id}", mealHandler.GetMealByID)
+	protectedMux.HandleFunc("POST /meals", mealHandler.CreateMeal)
+	protectedMux.HandleFunc("POST /meals/get-or-create", mealHandler.GetOrCreateMeal)
+	protectedMux.HandleFunc("DELETE /meals/{id}", mealHandler.DeleteMeal)
 
 	// Ingredient routes
-	mux.HandleFunc("GET /ingredients", ingredientHandler.GetIngredients)
-	mux.HandleFunc("POST /ingredients", ingredientHandler.CreateIngredient)
-	mux.HandleFunc("POST /ingredients/get-or-create", ingredientHandler.GetOrCreateIngredient)
-	mux.HandleFunc("PATCH /ingredients/{id}/availability", ingredientHandler.UpdateAvailability)
-	mux.HandleFunc("DELETE /ingredients/{id}", ingredientHandler.DeleteIngredient)
+	protectedMux.HandleFunc("GET /ingredients", ingredientHandler.GetIngredients)
+	protectedMux.HandleFunc("POST /ingredients", ingredientHandler.CreateIngredient)
+	protectedMux.HandleFunc("POST /ingredients/get-or-create", ingredientHandler.GetOrCreateIngredient)
+	protectedMux.HandleFunc("PATCH /ingredients/{id}/availability", ingredientHandler.UpdateAvailability)
+	protectedMux.HandleFunc("DELETE /ingredients/{id}", ingredientHandler.DeleteIngredient)
 
 	// Relationship routes
-	mux.HandleFunc("POST /meals/{mealId}/ingredients/{ingredientId}", ingredientHandler.LinkToMeal)
+	protectedMux.HandleFunc("POST /meals/{mealId}/ingredients/{ingredientId}", ingredientHandler.LinkToMeal)
 
 	// Planner routes
-	mux.HandleFunc("POST /planner", plannerHandler.CreatePlannerEntry)
-	mux.HandleFunc("GET /planner", plannerHandler.GetAllEntries)
-	mux.HandleFunc("GET /planner/{dayOfWeek}", plannerHandler.GetEntriesByDay)
-	mux.HandleFunc("DELETE /planner/{id}", plannerHandler.DeleteEntry)
+	protectedMux.HandleFunc("POST /planner", plannerHandler.CreatePlannerEntry)
+	protectedMux.HandleFunc("GET /planner", plannerHandler.GetAllEntries)
+	protectedMux.HandleFunc("GET /planner/{dayOfWeek}", plannerHandler.GetEntriesByDay)
+	protectedMux.HandleFunc("DELETE /planner/{id}", plannerHandler.DeleteEntry)
 
 	// Shopping routes
-	mux.HandleFunc("GET /shopping", shoppingHandler.GetItems)
-	mux.HandleFunc("POST /shopping", shoppingHandler.CreateItem)
-	mux.HandleFunc("PATCH /shopping/{id}/bought", shoppingHandler.MarkAsBought)
-	mux.HandleFunc("DELETE /shopping/{id}", shoppingHandler.DeleteItem)
+	protectedMux.HandleFunc("GET /shopping", shoppingHandler.GetItems)
+	protectedMux.HandleFunc("POST /shopping", shoppingHandler.CreateItem)
+	protectedMux.HandleFunc("PATCH /shopping/{id}/bought", shoppingHandler.MarkAsBought)
+	protectedMux.HandleFunc("DELETE /shopping/{id}", shoppingHandler.DeleteItem)
 
 	// Notification routes
-	mux.HandleFunc("POST /notifications/generate", notificationHandler.Generate)
-	mux.HandleFunc("GET /notifications", notificationHandler.List)
-	mux.HandleFunc("PATCH /notifications/{id}/read", notificationHandler.MarkAsRead)
-	mux.HandleFunc("DELETE /notifications/{id}", notificationHandler.Delete)
+	protectedMux.HandleFunc("POST /notifications/generate", notificationHandler.Generate)
+	protectedMux.HandleFunc("GET /notifications", notificationHandler.List)
+	protectedMux.HandleFunc("PATCH /notifications/{id}/read", notificationHandler.MarkAsRead)
+	protectedMux.HandleFunc("DELETE /notifications/{id}", notificationHandler.Delete)
+
+	// Apply auth middleware to all protected routes
+	mux.Handle("/", authMiddleware(protectedMux))
 }
