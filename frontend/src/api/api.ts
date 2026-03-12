@@ -3,23 +3,33 @@ import { Meal, Ingredient, PlannerEntry, Notification } from './types';
 const API_BASE_URL = 'http://localhost:8080';
 
 async function fetcher<T>(url: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${url}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-  });
+  console.log(`[API] ${options?.method || 'GET'} ${url}`, options?.body ? JSON.parse(options.body as string) : '');
+  try {
+    const response = await fetch(`${API_BASE_URL}${url}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers,
+      },
+    });
 
-  if (!response.ok) {
-    throw new Error(`API Error: ${response.statusText}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`[API Error] ${response.status} ${response.statusText}: ${errorText}`);
+      throw new Error(`API Error: ${response.status} ${response.statusText}`);
+    }
+
+    if (response.status === 204) {
+      return {} as T;
+    }
+
+    const data = await response.json();
+    console.log(`[API Success] ${url}`, data);
+    return data;
+  } catch (error) {
+    console.error(`[API Fetch Error] ${url}`, error);
+    throw error;
   }
-
-  if (response.status === 204) {
-    return {} as T;
-  }
-
-  return response.json();
 }
 
 export const api = {

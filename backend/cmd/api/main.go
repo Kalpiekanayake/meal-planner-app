@@ -41,6 +41,18 @@ func main() {
 	mux := http.NewServeMux()
 	routes.SetupRoutes(mux, mealHandler, ingredientHandler, plannerHandler, notifyHandler)
 
+	// Add CORS middleware
+	corsMux := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		mux.ServeHTTP(w, r)
+	})
+
 	// 6. Start server
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -48,7 +60,7 @@ func main() {
 	}
 
 	fmt.Printf("Server running on port %s 🚀\n", port)
-	if err := http.ListenAndServe(":"+port, mux); err != nil {
+	if err := http.ListenAndServe(":"+port, corsMux); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 }

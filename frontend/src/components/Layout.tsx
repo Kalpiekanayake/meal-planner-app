@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Utensils, Apple, Calendar, Bell } from 'lucide-react';
+import { Utensils, Apple, Calendar, Bell, Menu, X, ChevronRight } from 'lucide-react';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const navItems = [
     { name: 'Meals', path: '/', icon: <Utensils size={20} /> },
@@ -13,41 +14,76 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="bg-indigo-600 text-white shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center">
-              <span className="text-xl font-bold flex items-center gap-2">
-                <Utensils /> Meal Planner
-              </span>
-            </div>
-            <nav className="flex space-x-4">
-              {navItems.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    location.pathname === item.path
-                      ? 'bg-indigo-700 text-white'
-                      : 'text-indigo-100 hover:bg-indigo-500'
-                  }`}
-                >
-                  {item.icon} {item.name}
-                </Link>
-              ))}
-            </nav>
-          </div>
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Sidebar */}
+      <aside 
+        className={`${
+          isSidebarOpen ? 'w-64' : 'w-20'
+        } bg-indigo-800 text-white transition-all duration-300 ease-in-out flex flex-col shadow-xl z-20`}
+      >
+        <div className="p-4 flex items-center justify-between border-b border-indigo-700">
+          {isSidebarOpen && (
+            <span className="text-xl font-bold flex items-center gap-2 overflow-hidden whitespace-nowrap">
+              <Utensils className="flex-shrink-0" /> Meal Planner
+            </span>
+          )}
+          <button 
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="p-1 hover:bg-indigo-700 rounded-md transition-colors mx-auto"
+          >
+            {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
         </div>
-      </header>
 
-      <main className="flex-grow container mx-auto px-4 py-8">
-        {children}
-      </main>
+        <nav className="flex-grow mt-6 px-3 space-y-2">
+          {navItems.map((item) => (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200 group ${
+                location.pathname === item.path
+                  ? 'bg-indigo-600 text-white shadow-lg'
+                  : 'text-indigo-100 hover:bg-indigo-700 hover:pl-4'
+              }`}
+            >
+              <div className={`${location.pathname === item.path ? 'scale-110' : 'group-hover:scale-110'} transition-transform`}>
+                {item.icon}
+              </div>
+              {isSidebarOpen && (
+                <span className="flex-grow">{item.name}</span>
+              )}
+              {isSidebarOpen && location.pathname === item.path && (
+                <ChevronRight size={16} />
+              )}
+            </Link>
+          ))}
+        </nav>
 
-      <footer className="bg-white border-t py-4 text-center text-gray-500 text-sm">
-        &copy; {new Date().getFullYear()} Meal Planner App
-      </footer>
+        <div className="p-4 border-t border-indigo-700">
+          {isSidebarOpen ? (
+            <div className="text-xs text-indigo-300 text-center">
+              &copy; {new Date().getFullYear()} Meal Planner App
+            </div>
+          ) : (
+            <div className="text-center font-bold">MP</div>
+          )}
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <div className="flex-grow flex flex-col min-w-0">
+        <header className="bg-white border-b h-16 flex items-center px-8 shadow-sm">
+          <h1 className="text-xl font-semibold text-gray-800">
+            {navItems.find(item => item.path === location.pathname)?.name || 'Dashboard'}
+          </h1>
+        </header>
+
+        <main className="flex-grow p-8 overflow-auto">
+          <div className="max-w-7xl mx-auto">
+            {children}
+          </div>
+        </main>
+      </div>
     </div>
   );
 };

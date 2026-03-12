@@ -4,32 +4,38 @@ import { api } from '../api/api';
 import { Plus, Trash2, Link as LinkIcon } from 'lucide-react';
 
 const MealsPage: React.FC = () => {
-  const { meals, ingredients, refreshData, loading } = useAppContext();
+  const { meals, ingredients, refreshData, loading, showToast } = useAppContext();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [selectedMealId, setSelectedMealId] = useState<string | null>(null);
   const [selectedIngredientId, setSelectedIngredientId] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleCreateMeal = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name) return;
+    setIsSubmitting(true);
     try {
       await api.createMeal(name, description);
       setName('');
       setDescription('');
+      showToast('Meal created successfully!', 'success');
       refreshData();
     } catch (err) {
-      alert('Failed to create meal');
+      showToast('Failed to create meal', 'error');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleDeleteMeal = async (id: string) => {
-    if (!confirm('Are you sure?')) return;
+    if (!confirm('Are you sure you want to delete this meal?')) return;
     try {
       await api.deleteMeal(id);
+      showToast('Meal deleted', 'success');
       refreshData();
     } catch (err) {
-      alert('Failed to delete meal');
+      showToast('Failed to delete meal', 'error');
     }
   };
 
@@ -37,11 +43,12 @@ const MealsPage: React.FC = () => {
     if (!selectedMealId || !selectedIngredientId) return;
     try {
       await api.linkIngredientToMeal(selectedMealId, selectedIngredientId);
+      showToast('Ingredient linked!', 'success');
       setSelectedIngredientId('');
       setSelectedMealId(null);
       refreshData();
     } catch (err) {
-      alert('Failed to link ingredient');
+      showToast('Failed to link ingredient', 'error');
     }
   };
 
