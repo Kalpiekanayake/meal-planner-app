@@ -22,6 +22,7 @@ func SetupRoutes(
 	mux.HandleFunc("GET /meals", mealHandler.GetMeals)
 	mux.HandleFunc("GET /meals/{id}", mealHandler.GetMealByID)
 	mux.HandleFunc("POST /meals", mealHandler.CreateMeal)
+	mux.HandleFunc("POST /meals/get-or-create", mealHandler.GetOrCreateMeal)
 	mux.HandleFunc("DELETE /meals/{id}", mealHandler.DeleteMeal)
 
 	// Ingredient routes

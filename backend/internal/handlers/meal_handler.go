@@ -69,6 +69,23 @@ func (h *MealHandler) CreateMeal(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(meal)
 }
 
+func (h *MealHandler) GetOrCreateMeal(w http.ResponseWriter, r *http.Request) {
+	var req createMealRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	meal, err := h.service.GetOrCreateMeal(r.Context(), req.Name)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(meal)
+}
+
 func (h *MealHandler) DeleteMeal(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	if id == "" {

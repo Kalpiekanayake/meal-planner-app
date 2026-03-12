@@ -8,6 +8,7 @@ import (
 type MealRepository interface {
 	GetAllMeals(ctx context.Context) ([]db.MealModel, error)
 	GetMealByID(ctx context.Context, id string) (*db.MealModel, error)
+	GetMealByName(ctx context.Context, name string) (*db.MealModel, error)
 	CreateMeal(ctx context.Context, name string) (*db.MealModel, error)
 	DeleteMeal(ctx context.Context, id string) (*db.MealModel, error)
 }
@@ -29,6 +30,14 @@ func (m *mealRepo) GetAllMeals(ctx context.Context) ([]db.MealModel, error) {
 func (m *mealRepo) GetMealByID(ctx context.Context, id string) (*db.MealModel, error) {
 	return m.repo.Client.Meal.FindUnique(
 		db.Meal.ID.Equals(id),
+	).With(
+		db.Meal.Ingredients.Fetch(),
+	).Exec(ctx)
+}
+
+func (m *mealRepo) GetMealByName(ctx context.Context, name string) (*db.MealModel, error) {
+	return m.repo.Client.Meal.FindUnique(
+		db.Meal.Name.Equals(name),
 	).With(
 		db.Meal.Ingredients.Fetch(),
 	).Exec(ctx)
