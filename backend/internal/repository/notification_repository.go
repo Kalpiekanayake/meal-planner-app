@@ -6,9 +6,9 @@ import (
 )
 
 type NotificationRepository interface {
-	CreateNotification(ctx context.Context, dayOfWeek, mealType, missingIngredients string) (*db.NotificationModel, error)
 	GetAllNotifications(ctx context.Context) ([]db.NotificationModel, error)
-	GetNotificationsByDay(ctx context.Context, dayOfWeek string) ([]db.NotificationModel, error)
+	CreateNotification(ctx context.Context, title string, message string, notifyType string) (*db.NotificationModel, error)
+	MarkAsRead(ctx context.Context, id string) (*db.NotificationModel, error)
 	DeleteNotification(ctx context.Context, id string) (*db.NotificationModel, error)
 	DeleteAllNotifications(ctx context.Context) (int, error)
 }
@@ -21,33 +21,35 @@ func NewNotificationRepository(repo *PrismaRepository) NotificationRepository {
 	return &notificationRepo{repo: repo}
 }
 
-func (r *notificationRepo) CreateNotification(ctx context.Context, dayOfWeek, mealType, missingIngredients string) (*db.NotificationModel, error) {
-	return r.repo.Client.Notification.CreateOne(
-		db.Notification.DayOfWeek.Set(dayOfWeek),
-		db.Notification.MealType.Set(mealType),
-		db.Notification.MissingIngredients.Set(missingIngredients),
-	).Exec(ctx)
-}
-
-func (r *notificationRepo) GetAllNotifications(ctx context.Context) ([]db.NotificationModel, error) {
-	return r.repo.Client.Notification.FindMany().OrderBy(
+func (n *notificationRepo) GetAllNotifications(ctx context.Context) ([]db.NotificationModel, error) {
+	return n.repo.Client.Notification.FindMany().OrderBy(
 		db.Notification.CreatedAt.Order(db.SortOrderDesc),
 	).Exec(ctx)
 }
 
-func (r *notificationRepo) GetNotificationsByDay(ctx context.Context, dayOfWeek string) ([]db.NotificationModel, error) {
-	return r.repo.Client.Notification.FindMany(
-		db.Notification.DayOfWeek.Equals(dayOfWeek),
+func (n *notificationRepo) CreateNotification(ctx context.Context, title string, message string, notifyType string) (*db.NotificationModel, error) {
+	return n.repo.Client.Notification.CreateOne(
+		db.Notification.Title.Set(title),
+		db.Notification.Message.Set(message),
+		db.Notification.Type.Set(notifyType),
 	).Exec(ctx)
 }
 
-func (r *notificationRepo) DeleteNotification(ctx context.Context, id string) (*db.NotificationModel, error) {
-	return r.repo.Client.Notification.FindUnique(
+func (n *notificationRepo) MarkAsRead(ctx context.Context, id string) (*db.NotificationModel, error) {
+	return n.repo.Client.Notification.FindUnique(
+		db.Notification.ID.Equals(id),
+	).Update(
+		db.Notification.IsRead.Set(true),
+	).Exec(ctx)
+}
+
+func (n *notificationRepo) DeleteNotification(ctx context.Context, id string) (*db.NotificationModel, error) {
+	return n.repo.Client.Notification.FindUnique(
 		db.Notification.ID.Equals(id),
 	).Delete().Exec(ctx)
 }
 
-func (r *notificationRepo) DeleteAllNotifications(ctx context.Context) (int, error) {
-	batch, err := r.repo.Client.Notification.FindMany().Delete().Exec(ctx)
-	return batch.Count, err
+func (n *notificationRepo) DeleteAllNotifications(ctx context.Context) (int, error) {
+	res, err := n.repo.Client.Notification.FindMany().Delete().Exec(ctx)
+	return res.Count, err
 }

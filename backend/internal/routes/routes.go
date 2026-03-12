@@ -11,6 +11,7 @@ func SetupRoutes(
 	ingredientHandler *handlers.IngredientHandler,
 	plannerHandler *handlers.PlannerHandler,
 	notificationHandler *handlers.NotificationHandler,
+	shoppingHandler *handlers.ShoppingHandler,
 ) {
 	// Health check
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
@@ -26,8 +27,8 @@ func SetupRoutes(
 	// Ingredient routes
 	mux.HandleFunc("GET /ingredients", ingredientHandler.GetIngredients)
 	mux.HandleFunc("POST /ingredients", ingredientHandler.CreateIngredient)
+	mux.HandleFunc("PATCH /ingredients/{id}/availability", ingredientHandler.UpdateAvailability)
 	mux.HandleFunc("DELETE /ingredients/{id}", ingredientHandler.DeleteIngredient)
-	mux.HandleFunc("PATCH /ingredients/{id}/availability", notificationHandler.UpdateIngredientAvailability)
 
 	// Relationship routes
 	mux.HandleFunc("POST /meals/{mealId}/ingredients/{ingredientId}", ingredientHandler.LinkToMeal)
@@ -38,9 +39,15 @@ func SetupRoutes(
 	mux.HandleFunc("GET /planner/{dayOfWeek}", plannerHandler.GetEntriesByDay)
 	mux.HandleFunc("DELETE /planner/{id}", plannerHandler.DeleteEntry)
 
+	// Shopping routes
+	mux.HandleFunc("GET /shopping", shoppingHandler.GetItems)
+	mux.HandleFunc("POST /shopping", shoppingHandler.CreateItem)
+	mux.HandleFunc("PATCH /shopping/{id}/bought", shoppingHandler.MarkAsBought)
+	mux.HandleFunc("DELETE /shopping/{id}", shoppingHandler.DeleteItem)
+
 	// Notification routes
 	mux.HandleFunc("POST /notifications/generate", notificationHandler.Generate)
 	mux.HandleFunc("GET /notifications", notificationHandler.List)
-	mux.HandleFunc("GET /notifications/{dayOfWeek}", notificationHandler.GetByDay)
+	mux.HandleFunc("PATCH /notifications/{id}/read", notificationHandler.MarkAsRead)
 	mux.HandleFunc("DELETE /notifications/{id}", notificationHandler.Delete)
 }

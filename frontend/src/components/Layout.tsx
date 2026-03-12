@@ -17,7 +17,9 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navItems = [
     { name: 'Dashboard', path: '/', icon: <LayoutDashboard size={20} />, active: location.pathname === '/' },
     { name: 'Weekly Planner', path: '/planner', icon: <Calendar size={20} />, active: location.pathname === '/planner' },
+    { name: 'Meals', path: '/meals', icon: <Utensils size={20} />, active: location.pathname === '/meals' },
     { name: 'Ingredients', path: '/ingredients', icon: <Apple size={20} />, active: location.pathname === '/ingredients' },
+    { name: 'Shopping List', path: '/shopping', icon: <Search size={20} />, active: location.pathname === '/shopping' },
     { name: 'Notifications', path: '/notifications', icon: <Bell size={20} />, active: location.pathname === '/notifications', badge: notifications.length },
   ];
 

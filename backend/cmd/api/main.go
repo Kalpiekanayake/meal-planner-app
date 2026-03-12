@@ -24,22 +24,25 @@ func main() {
 	ingredientRepo := repository.NewIngredientRepository(prismaRepo)
 	plannerRepo := repository.NewPlannerRepository(prismaRepo)
 	notifyRepo := repository.NewNotificationRepository(prismaRepo)
+	shoppingRepo := repository.NewShoppingRepository(prismaRepo)
 
 	// 3. Setup services
 	mealService := services.NewMealService(mealRepo)
 	ingredientService := services.NewIngredientService(ingredientRepo)
 	plannerService := services.NewPlannerService(plannerRepo)
-	notifyService := services.NewNotificationService(notifyRepo, plannerRepo, mealRepo, prismaRepo.Client)
+	shoppingService := services.NewShoppingService(shoppingRepo)
+	notifyService := services.NewNotificationService(notifyRepo, plannerRepo, shoppingRepo, prismaRepo.Client)
 
 	// 4. Setup handlers
 	mealHandler := handlers.NewMealHandler(mealService)
 	ingredientHandler := handlers.NewIngredientHandler(ingredientService)
 	plannerHandler := handlers.NewPlannerHandler(plannerService)
-	notifyHandler := handlers.NewNotificationHandler(notifyService, ingredientService)
+	notifyHandler := handlers.NewNotificationHandler(notifyService)
+	shoppingHandler := handlers.NewShoppingHandler(shoppingService)
 
 	// 5. Setup router
 	mux := http.NewServeMux()
-	routes.SetupRoutes(mux, mealHandler, ingredientHandler, plannerHandler, notifyHandler)
+	routes.SetupRoutes(mux, mealHandler, ingredientHandler, plannerHandler, notifyHandler, shoppingHandler)
 
 	// Add CORS middleware
 	corsMux := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

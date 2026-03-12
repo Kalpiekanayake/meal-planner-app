@@ -1,4 +1,4 @@
-import { Meal, Ingredient, PlannerEntry, Notification } from './types';
+import { Meal, Ingredient, PlannerEntry, Notification, ShoppingItem } from './types';
 
 const API_BASE_URL = 'http://localhost:8080';
 
@@ -36,10 +36,10 @@ export const api = {
   // Meals
   getMeals: () => fetcher<Meal[]>('/meals'),
   getMeal: (id: string) => fetcher<Meal>(`/meals/${id}`),
-  createMeal: (name: string, description: string) =>
+  createMeal: (name: string) =>
     fetcher<Meal>('/meals', {
       method: 'POST',
-      body: JSON.stringify({ name, description }),
+      body: JSON.stringify({ name }),
     }),
   deleteMeal: (id: string) => fetcher<void>(`/meals/${id}`, { method: 'DELETE' }),
 
@@ -69,9 +69,21 @@ export const api = {
     }),
   deletePlannerEntry: (id: string) => fetcher<void>(`/planner/${id}`, { method: 'DELETE' }),
 
+  // Shopping List
+  getShoppingList: () => fetcher<ShoppingItem[]>('/shopping'),
+  createShoppingItem: (name: string, quantity?: string, note?: string, targetDate?: string) =>
+    fetcher<ShoppingItem>('/shopping', {
+      method: 'POST',
+      body: JSON.stringify({ name, quantity, note, targetDate }),
+    }),
+  markShoppingItemAsBought: (id: string) =>
+    fetcher<ShoppingItem>(`/shopping/${id}/bought`, { method: 'PATCH' }),
+  deleteShoppingItem: (id: string) => fetcher<void>(`/shopping/${id}`, { method: 'DELETE' }),
+
   // Notifications
   getNotifications: () => fetcher<Notification[]>('/notifications'),
-  getNotificationsByDay: (day: string) => fetcher<Notification[]>(`/notifications/${day}`),
+  markNotificationAsRead: (id: string) =>
+    fetcher<Notification>(`/notifications/${id}/read`, { method: 'PATCH' }),
   generateNotifications: () => fetcher<string>('/notifications/generate', { method: 'POST' }),
   deleteNotification: (id: string) => fetcher<void>(`/notifications/${id}`, { method: 'DELETE' }),
 };

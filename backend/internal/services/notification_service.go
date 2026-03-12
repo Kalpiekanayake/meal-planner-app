@@ -2,36 +2,38 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"meal-planner-backend/internal/repository"
 	"meal-planner-backend/prisma/db"
 	"strings"
+	"time"
 )
 
 type NotificationService interface {
 	GenerateNotifications(ctx context.Context) error
 	GetNotifications(ctx context.Context) ([]db.NotificationModel, error)
-	GetNotificationsByDay(ctx context.Context, dayOfWeek string) ([]db.NotificationModel, error)
+	MarkAsRead(ctx context.Context, id string) (*db.NotificationModel, error)
 	RemoveNotification(ctx context.Context, id string) (*db.NotificationModel, error)
 }
 
 type notificationService struct {
-	notifyRepo  repository.NotificationRepository
-	plannerRepo repository.PlannerRepository
-	mealRepo    repository.MealRepository
-	client      *db.PrismaClient
+	notifyRepo   repository.NotificationRepository
+	plannerRepo  repository.PlannerRepository
+	shoppingRepo repository.ShoppingRepository
+	client       *db.PrismaClient
 }
 
 func NewNotificationService(
 	notifyRepo repository.NotificationRepository,
 	plannerRepo repository.PlannerRepository,
-	mealRepo repository.MealRepository,
+	shoppingRepo repository.ShoppingRepository,
 	client *db.PrismaClient,
 ) NotificationService {
 	return &notificationService{
-		notifyRepo:  notifyRepo,
-		plannerRepo: plannerRepo,
-		mealRepo:    mealRepo,
-		client:      client,
+		notifyRepo:   notifyRepo,
+		plannerRepo:  plannerRepo,
+		shoppingRepo: shoppingRepo,
+		client:       client,
 	}
 }
 
@@ -42,7 +44,7 @@ func (s *notificationService) GenerateNotifications(ctx context.Context) error {
 		return err
 	}
 
-	// 2. Fetch all planner entries with meals and their ingredients
+	// 2. Check for missing ingredients in planned meals
 	entries, err := s.client.Planner.FindMany().With(
 		db.Planner.Meal.Fetch().With(
 			db.Meal.Ingredients.Fetch(),
@@ -52,7 +54,6 @@ func (s *notificationService) GenerateNotifications(ctx context.Context) error {
 		return err
 	}
 
-	// 3. For each planned meal, check ingredient availability
 	for _, entry := range entries {
 		var missing []string
 		meal := entry.Meal()
@@ -62,13 +63,54 @@ func (s *notificationService) GenerateNotifications(ctx context.Context) error {
 			}
 		}
 
-		// 4. If ingredients are missing, create a notification
 		if len(missing) > 0 {
-			missingStr := strings.Join(missing, ", ")
-			_, err := s.notifyRepo.CreateNotification(ctx, entry.DayOfWeek, entry.MealType, missingStr)
+			title := fmt.Sprintf("Missing ingredients for %s", entry.DayOfWeek)
+			message := fmt.Sprintf("You are missing %s for your %s meal (%s).", 
+				strings.Join(missing, ", "), entry.MealType, meal.Name)
+			_, err := s.notifyRepo.CreateNotification(ctx, title, message, "missing_ingredient")
 			if err != nil {
 				return err
 			}
+		}
+	}
+
+	// 3. Check for pending shopping items
+	shoppingItems, err := s.shoppingRepo.GetAllItems(ctx)
+	if err != nil {
+		return err
+	}
+
+	pendingCount := 0
+	for _, item := range shoppingItems {
+		if item.Status == "pending" {
+			pendingCount++
+		}
+	}
+
+	if pendingCount > 0 {
+		title := "Pending shopping items"
+		message := fmt.Sprintf("You have %d items in your shopping list that are still pending.", pendingCount)
+		_, err := s.notifyRepo.CreateNotification(ctx, title, message, "shopping")
+		if err != nil {
+			return err
+		}
+	}
+
+	// 4. Check for "forgotten" items (pending items older than 3 days)
+	threeDaysAgo := time.Now().AddDate(0, 0, -3)
+	forgottenCount := 0
+	for _, item := range shoppingItems {
+		if item.Status == "pending" && item.CreatedAt.Before(threeDaysAgo) {
+			forgottenCount++
+		}
+	}
+
+	if forgottenCount > 0 {
+		title := "Forgotten shopping items"
+		message := fmt.Sprintf("You have %d items in your shopping list for more than 3 days. Don't forget to buy them!", forgottenCount)
+		_, err := s.notifyRepo.CreateNotification(ctx, title, message, "forgotten_item")
+		if err != nil {
+			return err
 		}
 	}
 
@@ -79,8 +121,8 @@ func (s *notificationService) GetNotifications(ctx context.Context) ([]db.Notifi
 	return s.notifyRepo.GetAllNotifications(ctx)
 }
 
-func (s *notificationService) GetNotificationsByDay(ctx context.Context, dayOfWeek string) ([]db.NotificationModel, error) {
-	return s.notifyRepo.GetNotificationsByDay(ctx, dayOfWeek)
+func (s *notificationService) MarkAsRead(ctx context.Context, id string) (*db.NotificationModel, error) {
+	return s.notifyRepo.MarkAsRead(ctx, id)
 }
 
 func (s *notificationService) RemoveNotification(ctx context.Context, id string) (*db.NotificationModel, error) {

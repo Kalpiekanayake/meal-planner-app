@@ -47,6 +47,33 @@ func (h *IngredientHandler) CreateIngredient(w http.ResponseWriter, r *http.Requ
 	json.NewEncoder(w).Encode(ingredient)
 }
 
+type updateIngredientAvailabilityRequest struct {
+	IsAvailable bool `json:"isAvailable"`
+}
+
+func (h *IngredientHandler) UpdateAvailability(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		http.Error(w, "missing ingredient ID", http.StatusBadRequest)
+		return
+	}
+
+	var req updateIngredientAvailabilityRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	ingredient, err := h.service.UpdateAvailability(r.Context(), id, req.IsAvailable)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(ingredient)
+}
+
 func (h *IngredientHandler) DeleteIngredient(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	if id == "" {

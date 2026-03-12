@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { api } from '../api/api';
-import { Calendar, Trash2, Plus, ChevronLeft, ChevronRight, Utensils, Info } from 'lucide-react';
+import { Calendar, Trash2, Plus, ChevronLeft, ChevronRight, Utensils, ShoppingCart, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const MEAL_TYPES = ['Breakfast', 'Lunch', 'Dinner'];
 
 const WeeklyPlannerPage: React.FC = () => {
-  const { meals, planner, refreshData, loading, showToast } = useAppContext();
+  const { meals, planner, refreshData, loading, showToast, addMissingIngredientsToShoppingList } = useAppContext();
   const [day, setDay] = useState('Monday');
   const [mealType, setMealType] = useState('Lunch');
   const [mealId, setMealId] = useState('');
@@ -41,6 +41,12 @@ const WeeklyPlannerPage: React.FC = () => {
     }
   };
 
+  const getMissingIngredientsCount = (mealId: string) => {
+    const meal = meals.find(m => m.id === mealId);
+    if (!meal || !meal.ingredients) return 0;
+    return meal.ingredients.filter(ing => !ing.isAvailable).length;
+  };
+
   if (loading) return (
     <div className="flex flex-col items-center justify-center h-64 gap-4">
       <div className="w-12 h-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
@@ -53,15 +59,10 @@ const WeeklyPlannerPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
         <div>
           <h1 className="text-3xl font-black text-slate-800 tracking-tight">Weekly Planner</h1>
-          <p className="text-slate-500 font-medium">Schedule your meals and stay organized.</p>
+          <p className="text-slate-500 font-medium mt-1">Decide in advance what you'll eat this week.</p>
         </div>
         
         <div className="flex items-center gap-3">
-          <div className="flex bg-white rounded-2xl p-1 shadow-sm border border-slate-100">
-            <button className="p-2 hover:bg-slate-50 rounded-xl text-slate-400 transition-colors"><ChevronLeft size={20} /></button>
-            <div className="px-4 flex items-center font-bold text-sm text-slate-700">Next 7 Days</div>
-            <button className="p-2 hover:bg-slate-50 rounded-xl text-slate-400 transition-colors"><ChevronRight size={20} /></button>
-          </div>
           <button
             onClick={() => setShowQuickAdd(!showQuickAdd)}
             className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95"
@@ -98,13 +99,13 @@ const WeeklyPlannerPage: React.FC = () => {
               </select>
             </div>
             <div className="space-y-2">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Recipe</label>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Meal</label>
               <select 
                 value={mealId} 
                 onChange={(e) => setMealId(e.target.value)} 
                 className="w-full bg-slate-50 border-slate-100 rounded-2xl p-4 font-bold text-slate-700 focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 outline-none transition-all appearance-none cursor-pointer"
               >
-                <option value="">Choose a recipe...</option>
+                <option value="">Choose a meal...</option>
                 {meals.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
               </select>
             </div>
@@ -112,7 +113,7 @@ const WeeklyPlannerPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={isSubmitting || !mealId}
-                className="w-full bg-indigo-600 text-white rounded-2xl py-4 font-black shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-50"
+                className="w-full bg-slate-900 text-white rounded-2xl py-4 font-black shadow-xl shadow-slate-100 hover:bg-black transition-all active:scale-95 disabled:opacity-50"
               >
                 {isSubmitting ? 'Adding...' : 'Add to Schedule'}
               </button>
@@ -138,68 +139,83 @@ const WeeklyPlannerPage: React.FC = () => {
                 {d}
               </div>
               
-              <div className="p-3 flex-grow space-y-6">
-                {MEAL_TYPES.map(type => (
-                  <div key={type} className="space-y-3">
-                    <div className="flex items-center justify-between px-1">
-                      <h4 className="text-[9px] font-black text-slate-300 uppercase tracking-widest">{type}</h4>
-                      <Plus size={10} className="text-slate-200 opacity-0 group-hover/day:opacity-100 cursor-pointer hover:text-indigo-500 transition-all" onClick={() => { setDay(d); setMealType(type); setShowQuickAdd(true); }} />
-                    </div>
-                    
-                    <div className="space-y-2 min-h-[60px]">
-                      {planner
-                        .filter(entry => entry.dayOfWeek === d && entry.mealType === type)
-                        .map(entry => (
-                          <div 
-                            key={entry.id} 
-                            className="bg-white border border-slate-100 p-3.5 rounded-2xl shadow-sm relative group/item hover:border-indigo-200 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1"
-                          >
-                            <div className="flex flex-col gap-1 pr-4">
-                              <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-tighter">Planned</span>
-                              <p className="text-xs font-black text-slate-700 leading-tight tracking-tight">{entry.meal?.name}</p>
-                            </div>
-                            
-                            <button 
-                              onClick={() => handleDeleteEntry(entry.id)}
-                              className="absolute top-2 right-2 p-1.5 text-slate-200 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover/item:opacity-100 transition-all"
-                            >
-                              <Trash2 size={12} />
-                            </button>
-                            
-                            <div className="mt-3 flex items-center gap-1.5 text-[9px] font-bold text-slate-300 uppercase">
-                               <Utensils size={10} /> 
-                               <span>Recipe Info</span>
-                            </div>
-                          </div>
-                        ))}
+              <div className="p-3 flex-grow space-y-8">
+                {MEAL_TYPES.map(type => {
+                  const dayEntries = planner.filter(entry => entry.dayOfWeek === d && entry.mealType === type);
+                  
+                  return (
+                    <div key={type} className="space-y-3">
+                      <div className="flex items-center justify-between px-1">
+                        <h4 className="text-[9px] font-black text-slate-300 uppercase tracking-widest">{type}</h4>
+                        <button 
+                          className="text-slate-200 hover:text-indigo-500 transition-all"
+                          onClick={() => { setDay(d); setMealType(type); setShowQuickAdd(true); }}
+                        >
+                          <Plus size={10} />
+                        </button>
+                      </div>
                       
-                      {planner.filter(entry => entry.dayOfWeek === d && entry.mealType === type).length === 0 && (
-                        <div className="border-2 border-dashed border-slate-50 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 opacity-50 hover:opacity-100 hover:bg-slate-50/50 hover:border-indigo-100 transition-all cursor-pointer group/add">
-                           <div className="w-6 h-6 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover/add:bg-indigo-50 group-hover/add:text-indigo-400 transition-colors">
-                              <Plus size={12} />
-                           </div>
-                           <span className="text-[8px] text-slate-300 font-black uppercase tracking-widest">Unplanned</span>
-                        </div>
-                      )}
+                      <div className="space-y-3 min-h-[60px]">
+                        {dayEntries.map(entry => {
+                          const missingCount = getMissingIngredientsCount(entry.mealId);
+                          
+                          return (
+                            <div 
+                              key={entry.id} 
+                              className="bg-white border border-slate-100 p-4 rounded-2xl shadow-sm relative group/item hover:border-indigo-200 hover:shadow-md transition-all duration-300"
+                            >
+                              <div className="flex flex-col gap-1 pr-6">
+                                <p className="text-sm font-black text-slate-800 leading-tight">{entry.meal?.name}</p>
+                              </div>
+                              
+                              <button 
+                                onClick={() => handleDeleteEntry(entry.id)}
+                                className="absolute top-2 right-2 p-1 text-slate-200 hover:text-red-500 transition-all opacity-0 group-hover/item:opacity-100"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                              
+                              <div className="mt-3 pt-3 border-t border-slate-50 space-y-2">
+                                {missingCount > 0 ? (
+                                  <div className="flex flex-col gap-2">
+                                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-amber-600">
+                                      <AlertTriangle size={12} />
+                                      <span>{missingCount} missing items</span>
+                                    </div>
+                                    <button
+                                      onClick={() => addMissingIngredientsToShoppingList(entry.mealId)}
+                                      className="flex items-center justify-center gap-1.5 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-[9px] font-black uppercase tracking-tight hover:bg-indigo-100 transition-colors"
+                                    >
+                                      <ShoppingCart size={10} />
+                                      Add to Shop List
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-green-600">
+                                    <CheckCircle2 size={12} />
+                                    <span>All ingredients ready</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                        
+                        {dayEntries.length === 0 && (
+                          <div 
+                            onClick={() => { setDay(d); setMealType(type); setShowQuickAdd(true); }}
+                            className="border-2 border-dashed border-slate-50 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 opacity-30 hover:opacity-100 hover:bg-slate-50 hover:border-slate-200 transition-all cursor-pointer"
+                          >
+                             <Plus size={14} className="text-slate-300" />
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ))}
-        </div>
-      </div>
-
-      <div className="bg-indigo-50 rounded-3xl p-6 border border-indigo-100 flex items-start gap-4">
-        <div className="bg-indigo-600 text-white p-2 rounded-xl">
-          <Info size={20} />
-        </div>
-        <div>
-          <h4 className="text-indigo-900 font-black text-sm uppercase tracking-tight">Pro Tip</h4>
-          <p className="text-indigo-700/70 text-sm font-medium mt-1 leading-relaxed">
-            Scheduling your meals in advance helps you automatically generate shopping lists and notifications for missing ingredients. 
-            Check the <span className="font-bold">Notifications</span> tab to see what you need to buy!
-          </p>
         </div>
       </div>
     </div>

@@ -1,7 +1,6 @@
 export interface Meal {
   id: string;
   name: string;
-  description?: string;
   createdAt: string;
   ingredients?: Ingredient[];
 }
@@ -22,10 +21,22 @@ export interface PlannerEntry {
   createdAt: string;
 }
 
+export interface ShoppingItem {
+  id: string;
+  name: string;
+  quantity?: string;
+  note?: string;
+  status: 'pending' | 'bought';
+  targetDate?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Notification {
   id: string;
-  dayOfWeek: string;
-  mealType: string;
-  missingIngredients: string;
+  title: string;
+  message: string;
+  type: 'shopping' | 'missing_ingredient' | 'forgotten_item';
+  isRead: boolean;
   createdAt: string;
 }

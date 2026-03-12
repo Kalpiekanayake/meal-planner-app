@@ -48,8 +48,7 @@ func (h *MealHandler) GetMealByID(w http.ResponseWriter, r *http.Request) {
 }
 
 type createMealRequest struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
+	Name string `json:"name"`
 }
 
 func (h *MealHandler) CreateMeal(w http.ResponseWriter, r *http.Request) {
@@ -59,7 +58,7 @@ func (h *MealHandler) CreateMeal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	meal, err := h.service.AddMeal(r.Context(), req.Name, req.Description)
+	meal, err := h.service.AddMeal(r.Context(), req.Name)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

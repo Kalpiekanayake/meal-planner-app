@@ -9,7 +9,7 @@ import (
 type MealService interface {
 	GetMeals(ctx context.Context) ([]db.MealModel, error)
 	GetMealByID(ctx context.Context, id string) (*db.MealModel, error)
-	AddMeal(ctx context.Context, name string, description string) (*db.MealModel, error)
+	AddMeal(ctx context.Context, name string) (*db.MealModel, error)
 	RemoveMeal(ctx context.Context, id string) (*db.MealModel, error)
 }
 
@@ -29,8 +29,8 @@ func (s *mealService) GetMealByID(ctx context.Context, id string) (*db.MealModel
 	return s.repo.GetMealByID(ctx, id)
 }
 
-func (s *mealService) AddMeal(ctx context.Context, name string, description string) (*db.MealModel, error) {
-	return s.repo.CreateMeal(ctx, name, description)
+func (s *mealService) AddMeal(ctx context.Context, name string) (*db.MealModel, error) {
+	return s.repo.CreateMeal(ctx, name)
 }
 
 func (s *mealService) RemoveMeal(ctx context.Context, id string) (*db.MealModel, error) {

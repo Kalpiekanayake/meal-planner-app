@@ -7,14 +7,12 @@ import (
 )
 
 type NotificationHandler struct {
-	service           services.NotificationService
-	ingredientService services.IngredientService
+	service services.NotificationService
 }
 
-func NewNotificationHandler(service services.NotificationService, ingredientService services.IngredientService) *NotificationHandler {
+func NewNotificationHandler(service services.NotificationService) *NotificationHandler {
 	return &NotificationHandler{
-		service:           service,
-		ingredientService: ingredientService,
+		service: service,
 	}
 }
 
@@ -40,21 +38,21 @@ func (h *NotificationHandler) List(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(notifications)
 }
 
-func (h *NotificationHandler) GetByDay(w http.ResponseWriter, r *http.Request) {
-	day := r.PathValue("dayOfWeek")
-	if day == "" {
-		http.Error(w, "missing day of week", http.StatusBadRequest)
+func (h *NotificationHandler) MarkAsRead(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		http.Error(w, "missing notification ID", http.StatusBadRequest)
 		return
 	}
 
-	notifications, err := h.service.GetNotificationsByDay(r.Context(), day)
+	notification, err := h.service.MarkAsRead(r.Context(), id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(notifications)
+	json.NewEncoder(w).Encode(notification)
 }
 
 func (h *NotificationHandler) Delete(w http.ResponseWriter, r *http.Request) {
@@ -71,32 +69,4 @@ func (h *NotificationHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
-}
-
-// Extra: API to update ingredient availability
-type updateAvailabilityRequest struct {
-	IsAvailable bool `json:"isAvailable"`
-}
-
-func (h *NotificationHandler) UpdateIngredientAvailability(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
-	if id == "" {
-		http.Error(w, "missing ingredient ID", http.StatusBadRequest)
-		return
-	}
-
-	var req updateAvailabilityRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	ingredient, err := h.ingredientService.UpdateAvailability(r.Context(), id, req.IsAvailable)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(ingredient)
 }
