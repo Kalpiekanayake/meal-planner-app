@@ -241,25 +241,29 @@ const WeeklyPlannerPage: React.FC = () => {
                         return (
                           <Card
                             key={entry.id}
-                            className="p-5 relative group"    
+                            className="p-5 relative group"
+                            onClick={() => navigate(`/meals?highlight=${entry.mealId}`)}
                           >
                             <button
-                              onClick={() => handleDeleteEntry(entry.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteEntry(entry.id);
+                              }}
                               className="absolute -top-2 -right-2 w-8 h-8 bg-white text-slate-300 hover:text-red-500 shadow-sm border border-slate-50 rounded-full flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 z-10"
                             >
                               <X size={14} />
                             </button>
 
                             <div className="flex flex-col items-start gap-1 pr-4">
-                              <button
-                                onClick={() => navigate(`/meals?highlight=${entry.mealId}`)}
-                                className="font-black text-slate-800 leading-tight text-left hover:text-primary-600 transition-colors"
-                              >
+                              <div className="font-black text-slate-800 leading-tight text-left group-hover:text-primary-600 transition-colors">
                                 {entry.meal?.name}
-                              </button>
+                              </div>
                               {!hasIngredients && (
                                 <p className="text-[10px] font-bold text-slate-400 italic">Ingredients not linked yet</p>
                               )}
+                              <p className="text-[8px] font-black text-primary-500 opacity-0 group-hover:opacity-100 transition-all uppercase tracking-[0.15em] mt-1">
+                                Manage in Meals Library
+                              </p>
                             </div>
 
                             <div className="mt-4 pt-4 border-t border-slate-50 flex flex-col gap-3">      
@@ -270,7 +274,10 @@ const WeeklyPlannerPage: React.FC = () => {
                                     <span>{missingCount} missing items</span>
                                   </div>
                                   <Button
-                                    onClick={() => addMissingIngredientsToShoppingList(entry.mealId)}     
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      addMissingIngredientsToShoppingList(entry.mealId);
+                                    }}
                                     variant="secondary"
                                     size="sm"
                                     className="w-full text-[10px]"
