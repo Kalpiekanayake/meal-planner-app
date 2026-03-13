@@ -10,7 +10,7 @@ import { Badge } from '../components/ui/Badge';
 const CATEGORIES = ['Vegetables', 'Fruits', 'Dairy', 'Meat', 'Bakery', 'Drinks', 'Spices', 'Frozen', 'Household', 'Other'];
 
 const IngredientsPage: React.FC = () => {
-  const { ingredients, refreshData, loading, showToast, requireAuth } = useAppContext();
+  const { ingredients, shoppingList, refreshData, loading, showToast, requireAuth } = useAppContext();
   const [name, setName] = useState('');
   const [category, setCategory] = useState('Other');
   const [quantity, setQuantity] = useState('');
@@ -66,10 +66,17 @@ const IngredientsPage: React.FC = () => {
   };
 
   const handleAddToShoppingList = async (ing: any) => {
+    const isAlreadyInList = shoppingList.some(item => item.name.toLowerCase() === ing.name.toLowerCase());
+    if (isAlreadyInList) {
+      showToast('Already in Shopping List', 'info');
+      return;
+    }
+
     requireAuth(async () => {
       try {
         await api.createShoppingItem(ing.name, ing.category, ing.quantity);
         showToast('Added to Shopping List', 'success');
+        refreshData();
       } catch (err) {
         showToast('Failed to add to shopping list', 'error');
       }
@@ -79,6 +86,10 @@ const IngredientsPage: React.FC = () => {
   const filteredIngredients = ingredients.filter(ing =>
     ing.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const isInShoppingList = (name: string) => {
+    return shoppingList.some(item => item.name.toLowerCase() === name.toLowerCase());
+  };
 
   if (loading && ingredients.length === 0) return (
     <div className="flex flex-col items-center justify-center h-96 gap-4">
@@ -237,12 +248,12 @@ const IngredientsPage: React.FC = () => {
                 
                 <Button
                   onClick={() => handleAddToShoppingList(ing)}
-                  variant="white"
+                  variant={isInShoppingList(ing.name) ? 'secondary' : 'white'}
                   size="sm"
                   className="w-full text-[10px]"
-                  icon={<ShoppingCart size={14} />}
+                  icon={isInShoppingList(ing.name) ? <CheckCircle size={14} /> : <ShoppingCart size={14} />}
                 >
-                  Buy This
+                  {isInShoppingList(ing.name) ? 'In Shopping List' : 'Buy This'}
                 </Button>
               </div>
             </Card>

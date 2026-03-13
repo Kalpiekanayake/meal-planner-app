@@ -27,6 +27,7 @@ const WeeklyPlannerPage: React.FC = () => {
   const [showDropdown, setShowDropdown] = useState(false);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const mealInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -37,6 +38,20 @@ const WeeklyPlannerPage: React.FC = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const handlePlanClick = (selectedDay: string, selectedType: string) => {
+    setDay(selectedDay);
+    setMealType(selectedType);
+    setShowQuickAdd(true);
+    
+    // Smooth scroll to top form
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Focus the input after a short delay for the scroll/render
+    setTimeout(() => {
+      mealInputRef.current?.focus();
+    }, 500);
+  };
 
   const handleCreateEntry = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,6 +155,7 @@ const WeeklyPlannerPage: React.FC = () => {
             
             <div className="relative" ref={dropdownRef}>
               <Input
+                ref={mealInputRef}
                 label="Meal Name"
                 value={mealSearch}
                 onChange={(e) => {
@@ -209,17 +225,17 @@ const WeeklyPlannerPage: React.FC = () => {
       )}
 
       {/* Days Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
         {DAYS.map(d => (
-          <div key={d} className="bg-white rounded-[2.5rem] shadow-sm border border-slate-50 flex flex-col overflow-hidden h-full">
-            <div className="p-6 bg-slate-50/50 border-b border-slate-50 flex items-center justify-between">
-              <h3 className="font-black text-slate-800 uppercase tracking-[0.2em] text-sm">{d}</h3>       
-              <span className="w-8 h-8 rounded-full bg-white shadow-sm border border-slate-100 flex items-center justify-center text-[10px] font-black text-primary-600">
+          <div key={d} className="bg-slate-50/40 rounded-[3rem] shadow-lg shadow-slate-200/40 border-2 border-slate-100/80 flex flex-col overflow-hidden h-full hover:shadow-2xl hover:shadow-primary-100/30 hover:border-primary-100/50 transition-all duration-500 group/day">
+            <div className="p-8 bg-white border-b-2 border-slate-100 flex items-center justify-between group-hover/day:bg-primary-50/30 transition-colors">
+              <h3 className="font-black text-slate-800 uppercase tracking-[0.25em] text-sm">{d}</h3>       
+              <span className="w-10 h-10 rounded-2xl bg-slate-50 shadow-inner border border-slate-100 flex items-center justify-center text-xs font-black text-primary-600 group-hover/day:bg-white group-hover/day:scale-110 transition-all">
                 {planner.filter(e => e.dayOfWeek === d).length}
               </span>
             </div>
 
-            <div className="p-4 flex-grow space-y-8">
+            <div className="p-6 flex-grow space-y-10">
               {MEAL_TYPES.map(type => {
                 const dayEntries = planner.filter(entry => entry.dayOfWeek === d && entry.mealType === type.name);
 
@@ -297,15 +313,16 @@ const WeeklyPlannerPage: React.FC = () => {
                         );
                       })}
 
-                      {dayEntries.length === 0 && (
-                        <button
-                          onClick={() => { setDay(d); setMealType(type.name); setShowQuickAdd(true); }}   
-                          className="w-full border-2 border-dashed border-slate-100 rounded-[1.5rem] p-4 flex flex-col items-center justify-center gap-2 opacity-40 hover:opacity-100 hover:bg-primary-50 hover:border-primary-100 hover:text-primary-600 transition-all group"
-                        >
-                           <Plus size={16} className="group-hover:scale-110 transition-transform" />      
-                           <span className="text-[10px] font-black uppercase tracking-widest">Plan</span> 
-                        </button>
-                      )}
+                      {/* Always show Add button to allow multiple items */}
+                      <button
+                        onClick={() => handlePlanClick(d, type.name)}   
+                        className={`w-full border-2 border-dashed border-slate-100 rounded-[1.5rem] flex flex-col items-center justify-center gap-2 opacity-40 hover:opacity-100 hover:bg-primary-50 hover:border-primary-100 hover:text-primary-600 transition-all group ${dayEntries.length > 0 ? 'p-3' : 'p-4'}`}
+                      >
+                         <Plus size={dayEntries.length > 0 ? 14 : 16} className="group-hover:scale-110 transition-transform" />      
+                         <span className="text-[10px] font-black uppercase tracking-widest">
+                           {dayEntries.length > 0 ? `Add to ${type.name}` : 'Plan'}
+                         </span> 
+                      </button>
                     </div>
                   </div>
                 );

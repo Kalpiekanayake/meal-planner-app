@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement> {
   label?: string;
@@ -8,7 +8,7 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement | HTMLSe
   options?: { label: string; value: string }[];
 }
 
-export const Input: React.FC<InputProps> = ({
+export const Input = forwardRef<HTMLInputElement, InputProps>(({
   label,
   error,
   type = 'text',
@@ -16,7 +16,7 @@ export const Input: React.FC<InputProps> = ({
   options = [],
   className = '',
   ...props
-}) => {
+}, ref) => {
   const commonStyles = `
     w-full px-6 py-4 bg-slate-50 border-none rounded-2xl 
     focus:ring-4 focus:ring-primary-50 outline-none 
@@ -58,6 +58,7 @@ export const Input: React.FC<InputProps> = ({
         />
       ) : (
         <input
+          ref={ref}
           type={type}
           className={commonStyles}
           {...(props as any)}
@@ -67,4 +68,6 @@ export const Input: React.FC<InputProps> = ({
       {error && <p className="text-[10px] font-bold text-red-500 ml-2 uppercase tracking-tight">{error}</p>}
     </div>
   );
-};
+});
+
+Input.displayName = 'Input';
