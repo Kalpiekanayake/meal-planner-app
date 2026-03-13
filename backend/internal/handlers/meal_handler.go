@@ -15,7 +15,14 @@ func NewMealHandler(service services.MealService) *MealHandler {
 }
 
 func (h *MealHandler) GetMeals(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("user_id").(string)
+	userID, ok := r.Context().Value("user_id").(string)
+	if !ok || userID == "" {
+		// Return empty list for guests
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte("[]"))
+		return
+	}
+
 	meals, err := h.service.GetMeals(r.Context(), userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -27,7 +34,12 @@ func (h *MealHandler) GetMeals(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *MealHandler) GetMealByID(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("user_id").(string)
+	userID, ok := r.Context().Value("user_id").(string)
+	if !ok || userID == "" {
+		http.Error(w, "authentication required", http.StatusUnauthorized)
+		return
+	}
+
 	id := r.PathValue("id")
 	if id == "" {
 		http.Error(w, "missing meal ID", http.StatusBadRequest)
@@ -54,7 +66,12 @@ type createMealRequest struct {
 }
 
 func (h *MealHandler) CreateMeal(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("user_id").(string)
+	userID, ok := r.Context().Value("user_id").(string)
+	if !ok || userID == "" {
+		http.Error(w, "authentication required", http.StatusUnauthorized)
+		return
+	}
+
 	var req createMealRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
@@ -73,7 +90,12 @@ func (h *MealHandler) CreateMeal(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *MealHandler) GetOrCreateMeal(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("user_id").(string)
+	userID, ok := r.Context().Value("user_id").(string)
+	if !ok || userID == "" {
+		http.Error(w, "authentication required", http.StatusUnauthorized)
+		return
+	}
+
 	var req createMealRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
@@ -91,7 +113,12 @@ func (h *MealHandler) GetOrCreateMeal(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *MealHandler) DeleteMeal(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("user_id").(string)
+	userID, ok := r.Context().Value("user_id").(string)
+	if !ok || userID == "" {
+		http.Error(w, "authentication required", http.StatusUnauthorized)
+		return
+	}
+
 	id := r.PathValue("id")
 	if id == "" {
 		http.Error(w, "missing meal ID", http.StatusBadRequest)

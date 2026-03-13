@@ -1,17 +1,26 @@
-import { Meal, Ingredient, PlannerEntry, Notification, ShoppingItem } from './types';
+import { Meal, Ingredient, PlannerEntry, Notification, ShoppingItem, User } from './types';
 
 const API_BASE_URL = 'http://localhost:8080';
 
 async function fetcher<T>(url: string, options?: RequestInit): Promise<T> {
+  const token = localStorage.getItem('auth_token');
+  
   console.log(`[API] ${options?.method || 'GET'} ${url}`, options?.body ? JSON.parse(options.body as string) : '');
   try {
     const response = await fetch(`${API_BASE_URL}${url}`, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         ...options?.headers,
       },
     });
+
+    if (response.status === 401 && !url.includes('/auth/login') && !url.includes('/auth/register')) {
+      localStorage.removeItem('auth_token');
+      window.location.href = '/login';
+      throw new Error('Unauthorized');
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -33,6 +42,19 @@ async function fetcher<T>(url: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  // Auth
+  register: (name: string, email: string, password: string) =>
+    fetcher<User>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ name, email, password }),
+    }),
+  login: (email: string, password: string) =>
+    fetcher<{ token: string; user: User }>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    }),
+  getMe: () => fetcher<User>('/auth/me'),
+
   // Meals
   getMeals: () => fetcher<Meal[]>('/meals'),
   getMeal: (id: string) => fetcher<Meal>(`/meals/${id}`),
@@ -50,10 +72,10 @@ export const api = {
 
   // Ingredients
   getIngredients: () => fetcher<Ingredient[]>('/ingredients'),
-  createIngredient: (name: string) =>
+  createIngredient: (name: string, category: string, quantity: string, unit: string) =>
     fetcher<Ingredient>('/ingredients', {
       method: 'POST',
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, category, quantity, unit }),
     }),
   getOrCreateIngredient: (name: string) =>
     fetcher<Ingredient>('/ingredients/get-or-create', {
@@ -81,10 +103,10 @@ export const api = {
 
   // Shopping List
   getShoppingList: () => fetcher<ShoppingItem[]>('/shopping'),
-  createShoppingItem: (name: string, quantity?: string, note?: string, targetDate?: string) =>
+  createShoppingItem: (name: string, category: string, quantity?: string, note?: string, targetDate?: string) =>
     fetcher<ShoppingItem>('/shopping', {
       method: 'POST',
-      body: JSON.stringify({ name, quantity, note, targetDate }),
+      body: JSON.stringify({ name, category, quantity, note, targetDate }),
     }),
   markShoppingItemAsBought: (id: string) =>
     fetcher<ShoppingItem>(`/shopping/${id}/bought`, { method: 'PATCH' }),

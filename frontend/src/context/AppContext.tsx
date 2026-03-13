@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Meal, Ingredient, PlannerEntry, Notification, ShoppingItem } from '../api/types';
 import { api } from '../api/api';
+import { useAuth } from './AuthContext';
+import LoginModal from '../components/LoginModal';
 
 interface Toast {
   message: string;
@@ -18,18 +20,21 @@ interface AppContextType {
   refreshData: () => Promise<void>;
   showToast: (message: string, type: 'success' | 'error' | 'info') => void;
   addMissingIngredientsToShoppingList: (mealId: string) => Promise<void>;
+  requireAuth: (action: () => void) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
   const [meals, setMeals] = useState<Meal[]>([]);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [planner, setPlanner] = useState<PlannerEntry[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [shoppingList, setShoppingList] = useState<ShoppingItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'info') => {
     const id = Date.now();
@@ -39,8 +44,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }, 4000);
   }, []);
 
+  const requireAuth = (action: () => void) => {
+    if (!user) {
+      setIsLoginModalOpen(true);
+    } else {
+      action();
+    }
+  };
+
   const refreshData = async () => {
+    if (!user) return;
+    
     try {
+      setLoading(true);
       const [m, i, p, n, s] = await Promise.all([
         api.getMeals(),
         api.getIngredients(),
@@ -55,39 +71,55 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setShoppingList(s || []);
     } catch (error) {
       console.error('Failed to fetch data', error);
-      // showToast('Failed to load data from server', 'error');
     } finally {
       setLoading(false);
     }
   };
 
   const addMissingIngredientsToShoppingList = async (mealId: string) => {
-    try {
-      const meal = meals.find(m => m.id === mealId);
-      if (!meal) return;
+    requireAuth(async () => {
+      try {
+        const meal = meals.find(m => m.id === mealId);
+        if (!meal) return;
 
-      const missingIngredients = meal.ingredients?.filter(ing => !ing.isAvailable) || [];
-      
-      if (missingIngredients.length === 0) {
-        showToast('All ingredients are already available!', 'info');
-        return;
+        const missingIngredients = meal.ingredients?.filter(ing => !ing.isAvailable) || [];
+        
+        if (missingIngredients.length === 0) {
+          showToast('All ingredients are already available!', 'info');
+          return;
+        }
+
+        await Promise.all(
+          missingIngredients.map(ing => 
+            api.createShoppingItem(
+              ing.name, 
+              ing.category || 'Other', 
+              ing.quantity, 
+              `Required for: ${meal.name}`
+            )
+          )
+        );
+
+        showToast(`Added ${missingIngredients.length} items to your shopping list`, 'success');
+        refreshData();
+      } catch (error) {
+        console.error('Failed to add ingredients to shopping list', error);
+        showToast('Failed to add ingredients', 'error');
       }
-
-      await Promise.all(
-        missingIngredients.map(ing => api.createShoppingItem(ing.name, undefined, `Added from meal: ${meal.name}`))
-      );
-
-      showToast(`Added ${missingIngredients.length} ingredients to shopping list`, 'success');
-      refreshData();
-    } catch (error) {
-      console.error('Failed to add ingredients to shopping list', error);
-      showToast('Failed to add ingredients to shopping list', 'error');
-    }
+    });
   };
 
   useEffect(() => {
-    refreshData();
-  }, []);
+    if (user) {
+      refreshData();
+    } else {
+      setMeals([]);
+      setIngredients([]);
+      setPlanner([]);
+      setNotifications([]);
+      setShoppingList([]);
+    }
+  }, [user]);
 
   return (
     <AppContext.Provider value={{ 
@@ -99,24 +131,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       loading, 
       refreshData, 
       showToast,
-      addMissingIngredientsToShoppingList
+      addMissingIngredientsToShoppingList,
+      requireAuth
     }}>
       {children}
+      
+      <LoginModal 
+        isOpen={isLoginModalOpen} 
+        onClose={() => setIsLoginModalOpen(false)} 
+      />
+
       {/* Toast UI */}
       <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-3">
         {toasts.map((toast) => (
           <div
             key={toast.id}
             className={`${
-              toast.type === 'success' ? 'bg-indigo-600 shadow-indigo-200' : 
-              toast.type === 'error' ? 'bg-red-600 shadow-red-200' : 'bg-slate-800 shadow-slate-200'
-            } text-white px-6 py-4 rounded-2xl shadow-xl animate-in slide-in-from-right-8 duration-300 flex items-center gap-3 min-w-[300px] border border-white/10 backdrop-blur-md`}
+              toast.type === 'success' ? 'bg-teal-600' : 
+              toast.type === 'error' ? 'bg-red-600' : 'bg-slate-800'
+            } text-white px-6 py-4 rounded-[1.5rem] shadow-2xl animate-in slide-in-from-right-8 duration-300 flex items-center gap-3 min-w-[320px] border border-white/10 backdrop-blur-md`}
           >
-            <div className="bg-white/20 p-1.5 rounded-lg shrink-0">
-              {toast.type === 'success' ? '✅' : toast.type === 'error' ? '❌' : 'ℹ️'}
+            <div className="bg-white/20 p-2 rounded-xl shrink-0 text-xl">
+              {toast.type === 'success' ? '✨' : toast.type === 'error' ? '🚫' : '💡'}
             </div>
             <div className="flex-grow">
-              <p className="text-sm font-bold tracking-tight">{toast.message}</p>
+              <p className="text-sm font-black tracking-tight">{toast.message}</p>
             </div>
           </div>
         ))}

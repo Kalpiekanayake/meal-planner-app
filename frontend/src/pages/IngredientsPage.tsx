@@ -1,216 +1,249 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { api } from '../api/api';
-import { Trash2, CheckCircle, XCircle, Apple, ShoppingBasket, Search, Tag, ShoppingCart, AlertCircle } from 'lucide-react';
+import { Trash2, Apple, Search, ShoppingCart, Plus, X } from 'lucide-react';
+import { Button } from '../components/ui/Button';
+import { Card } from '../components/ui/Card';
+import { Input } from '../components/ui/Input';
+import { Badge } from '../components/ui/Badge';
+
+const CATEGORIES = ['Vegetables', 'Fruits', 'Dairy', 'Meat', 'Bakery', 'Drinks', 'Spices', 'Frozen', 'Household', 'Other'];
 
 const IngredientsPage: React.FC = () => {
-  const { ingredients, refreshData, loading, showToast } = useAppContext();
+  const { ingredients, refreshData, loading, showToast, requireAuth } = useAppContext();
   const [name, setName] = useState('');
+  const [category, setCategory] = useState('Other');
+  const [quantity, setQuantity] = useState('');
+  const [unit, setUnit] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showForm, setShowForm] = useState(false);
 
   const handleCreateIngredient = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name) return;
-    setIsSubmitting(true);
-    try {
-      await api.createIngredient(name);
-      setName('');
-      showToast('Ingredient added to library!', 'success');
-      refreshData();
-    } catch (err) {
-      showToast('Failed to add ingredient', 'error');
-    } finally {
-      setIsSubmitting(false);
-    }
+    
+    requireAuth(async () => {
+      setIsSubmitting(true);
+      try {
+        await api.createIngredient(name, category, quantity, unit);
+        setName('');
+        setQuantity('');
+        setUnit('');
+        setShowForm(false);
+        showToast('Added to pantry', 'success');
+        refreshData();
+      } catch (err) {
+        showToast('Failed to add ingredient', 'error');
+      } finally {
+        setIsSubmitting(false);
+      }
+    });
   };
 
   const handleToggleAvailability = async (id: string, current: boolean) => {
-    try {
-      await api.updateIngredientAvailability(id, !current);
-      showToast(`Marked as ${!current ? 'available' : 'out of stock'}`, 'success');
-      refreshData();
-    } catch (err) {
-      showToast('Failed to update status', 'error');
-    }
+    requireAuth(async () => {
+      try {
+        await api.updateIngredientAvailability(id, !current);
+        refreshData();
+      } catch (err) {
+        showToast('Failed to update status', 'error');
+      }
+    });
   };
 
   const handleDeleteIngredient = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this ingredient?')) return;
-    try {
-      await api.deleteIngredient(id);
-      showToast('Ingredient removed', 'success');
-      refreshData();
-    } catch (err) {
-      showToast('Failed to delete ingredient', 'error');
-    }
+    requireAuth(async () => {
+      if (!confirm('Remove this ingredient?')) return;
+      try {
+        await api.deleteIngredient(id);
+        showToast('Ingredient removed', 'success');
+        refreshData();
+      } catch (err) {
+        showToast('Failed to delete ingredient', 'error');
+      }
+    });
   };
 
-  const handleAddToShoppingList = async (ingName: string) => {
-    try {
-      await api.createShoppingItem(ingName, undefined, 'Added from pantry (Out of stock)');
-      showToast(`Added ${ingName} to shopping list`, 'success');
-      refreshData();
-    } catch (err) {
-      showToast('Failed to add to shopping list', 'error');
-    }
+  const handleAddToShoppingList = async (ing: any) => {
+    requireAuth(async () => {
+      try {
+        await api.createShoppingItem(ing.name, ing.category, ing.quantity);
+        showToast(`Added ${ing.name} to shopping list`, 'success');
+      } catch (err) {
+        showToast('Failed to add to shopping list', 'error');
+      }
+    });
   };
 
-  const filteredIngredients = ingredients.filter(ing => 
+  const filteredIngredients = ingredients.filter(ing =>
     ing.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  if (loading) return (
-    <div className="flex flex-col items-center justify-center h-64 gap-4">
-      <div className="w-12 h-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
-      <p className="text-slate-400 font-bold animate-pulse uppercase tracking-widest text-xs">Loading Pantry...</p>
+  if (loading && ingredients.length === 0) return (
+    <div className="flex flex-col items-center justify-center h-96 gap-4">
+      <div className="w-12 h-12 border-4 border-primary-100 border-t-primary-600 rounded-full animate-spin"></div>
+      <p className="text-slate-400 font-bold animate-pulse uppercase tracking-widest text-xs">Syncing Pantry...</p>
     </div>
   );
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+    <div className="space-y-10 pb-20 animate-fade-in">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">       
         <div>
-          <h1 className="text-3xl font-black text-slate-800 tracking-tight">Ingredient Pantry</h1>
-          <p className="text-slate-500 font-medium">Keep track of what you have and what you need.</p>
+          <h1 className="text-4xl font-black text-slate-800 tracking-tight">Ingredient Pantry</h1>        
+          <p className="text-slate-500 font-medium mt-1">Track your stock and never run out.</p>
         </div>
-        
-        <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
-          <div className="relative group min-w-[300px]">
-            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
-            <input 
-              type="text" 
-              placeholder="Search ingredients..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-white border border-slate-100 rounded-2xl text-sm font-medium focus:ring-4 focus:ring-indigo-50 outline-none transition-all shadow-sm"
-            />
-          </div>
-        </div>
+
+        <Button
+          onClick={() => setShowForm(!showForm)}
+          variant={showForm ? 'white' : 'primary'}
+          size="lg"
+          icon={showForm ? <X size={20} /> : <Plus size={20} />}
+          className="shadow-xl"
+        >
+          {showForm ? 'Cancel' : 'New Ingredient'}
+        </Button>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
-        {/* Sidebar Form */}
-        <div className="xl:col-span-1">
-          <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 sticky top-28">
-            <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-6 shadow-inner">
-              <ShoppingBasket size={24} />
+      {showForm && (
+        <Card className="p-8 border-primary-50 animate-bounce-in" hoverable={false}>
+          <h2 className="text-xl font-black mb-6 flex items-center gap-2 text-slate-800">
+            <Apple size={24} className="text-primary-500" /> Pantry Entry
+          </h2>
+          <form onSubmit={handleCreateIngredient} className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
+            <div className="md:col-span-2">
+              <Input
+                label="Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Greek Yogurt"
+                required
+              />
             </div>
-            <h2 className="text-xl font-black mb-1 text-slate-800 tracking-tight">Add New</h2>
-            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-6">Pantry Item</p>
-            
-            <form onSubmit={handleCreateIngredient} className="space-y-4">
-              <div className="space-y-2">
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Ingredient Name</label>
-                <div className="relative">
-                  <Tag size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full pl-11 pr-4 py-4 rounded-2xl border-slate-100 bg-slate-50 focus:bg-white focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 transition-all border outline-none font-bold text-slate-700 placeholder:text-slate-300"
-                    placeholder="e.g. Avocado"
-                    disabled={isSubmitting}
-                  />
-                </div>
-              </div>
-              <button
+            <Input
+              label="Category"
+              isSelect
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              options={CATEGORIES.map(cat => ({ label: cat, value: cat }))}
+            />
+            <Input
+              label="Quantity"
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+              placeholder="e.g. 500"
+            />
+            <Input
+              label="Unit"
+              value={unit}
+              onChange={(e) => setUnit(e.target.value)}
+              placeholder="e.g. g, ml, pcs"
+            />
+            <div className="md:col-span-full flex justify-end">
+              <Button
                 type="submit"
-                disabled={isSubmitting || !name}
-                className="w-full py-4 bg-indigo-600 text-white font-black rounded-2xl shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-50 disabled:shadow-none"
+                isLoading={isSubmitting}
+                disabled={!name}
+                size="lg"
+                className="px-12"
               >
-                {isSubmitting ? 'Adding...' : 'Add to Pantry'}
-              </button>
-            </form>
-
-            <div className="mt-8 pt-8 border-t border-slate-50">
-              <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-4 text-center">Summary</h4>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-slate-50 p-4 rounded-2xl text-center">
-                  <p className="text-2xl font-black text-slate-800">{ingredients.length}</p>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Total</p>
-                </div>
-                <div className="bg-green-50 p-4 rounded-2xl text-center">
-                  <p className="text-2xl font-black text-green-600">{ingredients.filter(i => i.isAvailable).length}</p>
-                  <p className="text-[10px] font-bold text-green-500 uppercase tracking-tighter">Ready</p>
-                </div>
-              </div>
+                Add to Pantry
+              </Button>
             </div>
-          </div>
-        </div>
+          </form>
+        </Card>
+      )}
 
-        {/* Main Grid */}
-        <div className="xl:col-span-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredIngredients.map((ing) => (
-              <div 
-                key={ing.id} 
-                className={`p-6 rounded-[2rem] border transition-all duration-300 flex flex-col justify-between group min-h-[180px] relative overflow-hidden bg-white shadow-sm hover:shadow-xl ${
-                  ing.isAvailable 
-                    ? 'border-white hover:border-green-100' 
-                    : 'border-amber-100 ring-1 ring-amber-50'
-                }`}
-              >
-                {!ing.isAvailable && (
-                  <div className="absolute top-0 right-0 p-3 text-amber-500">
-                    <AlertCircle size={16} />
-                  </div>
-                )}
-                
+      {/* Search & Filter */}
+      <div className="relative max-w-md">
+        <Search size={20} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" />
+        <input
+          type="text"
+          placeholder="Search pantry..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full pl-14 pr-6 py-4 bg-white border border-slate-100 rounded-[1.5rem] font-bold text-slate-700 focus:ring-4 focus:ring-primary-50 outline-none transition-all shadow-sm"
+        />
+      </div>
+
+      {/* Ingredients Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {filteredIngredients.length === 0 ? (
+          <div className="col-span-full bg-white rounded-[3rem] p-20 text-center border border-dashed border-slate-200">
+            <div className="w-24 h-24 bg-primary-50 text-primary-500 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-inner">
+              <Apple size={48} strokeWidth={1.5} />
+            </div>
+            <h3 className="text-2xl font-black text-slate-800 tracking-tight">Pantry is empty</h3>        
+            <p className="text-slate-400 font-medium mt-2 max-w-xs mx-auto">
+              Start building your ingredient library to enable smart meal planning.
+            </p>
+          </div>
+        ) : (
+          filteredIngredients.map((ing) => (
+            <Card
+              key={ing.id}
+              className={`p-6 flex flex-col justify-between group ${
+                !ing.isAvailable ? 'bg-amber-50/30 border-amber-100' : ''
+              }`}
+            >
+              <div className="space-y-4">
                 <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors ${ing.isAvailable ? 'bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white' : 'bg-amber-50 text-amber-600'}`}>
-                      <Apple size={24} />
-                    </div>
-                    <h3 className={`font-black text-xl tracking-tight ${!ing.isAvailable ? 'text-slate-800' : 'text-slate-800'}`}>
-                      {ing.name}
-                    </h3>
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 ${ing.isAvailable ? 'bg-primary-50 text-primary-600 group-hover:bg-primary-500 group-hover:text-white group-hover:rotate-6 shadow-sm shadow-primary-50' : 'bg-amber-100 text-amber-600'}`}>
+                    <Apple size={24} />
                   </div>
                   <button
                     onClick={() => handleDeleteIngredient(ing.id)}
-                    className="p-2 text-slate-200 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                    className="w-8 h-8 rounded-full bg-white text-slate-200 hover:text-red-500 shadow-sm border border-slate-50 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"  
                   >
-                    <Trash2 size={20} />
+                    <Trash2 size={14} />
                   </button>
                 </div>
 
-                <div className="flex flex-col gap-3 mt-6">
-                  <button
-                    onClick={() => handleToggleAvailability(ing.id, ing.isAvailable)}
-                    className={`flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest ${
-                      ing.isAvailable 
-                        ? 'bg-green-50 text-green-700 hover:bg-green-100' 
-                        : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                    }`}
-                  >
-                    {ing.isAvailable ? <CheckCircle size={14} /> : <XCircle size={14} />}
-                    {ing.isAvailable ? 'In Pantry' : 'Out of Stock'}
-                  </button>
-                  
-                  {!ing.isAvailable && (
-                    <button
-                      onClick={() => handleAddToShoppingList(ing.name)}
-                      className="flex items-center justify-center gap-2 py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all active:scale-95"
-                    >
-                      <ShoppingCart size={14} />
-                      Add to Shop List
-                    </button>
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Badge variant="primary" className="text-[9px]">
+                      {ing.category}
+                    </Badge>
+                    {!ing.isAvailable && (
+                      <Badge variant="warning" className="text-[9px]">
+                        Out of Stock
+                      </Badge>
+                    )}
+                  </div>
+                  <h3 className="text-xl font-black text-slate-800 tracking-tight">{ing.name}</h3>        
+                  {ing.quantity && (
+                    <p className="text-xs font-bold text-slate-400 mt-1">
+                      {ing.quantity} {ing.unit}
+                    </p>
                   )}
                 </div>
               </div>
-            ))}
-            
-            {filteredIngredients.length === 0 && (
-              <div className="col-span-full py-32 text-center bg-white rounded-[3rem] border border-dashed border-slate-200 shadow-sm">
-                <div className="bg-slate-50 w-24 h-24 rounded-[2rem] flex items-center justify-center mx-auto mb-6 text-slate-200">
-                  <Apple size={48} />
-                </div>
-                <p className="text-slate-400 font-black text-2xl tracking-tight">Pantry is empty</p>
-                <p className="text-slate-300 font-medium mt-2">Start building your ingredient library.</p>
+
+              <div className="mt-8 pt-6 border-t border-slate-50 flex flex-col gap-3">
+                <Button
+                  onClick={() => handleToggleAvailability(ing.id, ing.isAvailable)}
+                  variant={ing.isAvailable ? 'secondary' : 'white'}
+                  size="sm"
+                  className="w-full text-[10px]"
+                >
+                  {ing.isAvailable ? 'In Pantry' : 'Mark Available'}
+                </Button>
+
+                {!ing.isAvailable && (
+                  <Button
+                    onClick={() => handleAddToShoppingList(ing)}
+                    size="sm"
+                    className="w-full text-[10px]"
+                    icon={<ShoppingCart size={14} />}
+                  >
+                    Buy This
+                  </Button>
+                )}
               </div>
-            )}
-          </div>
-        </div>
+            </Card>
+          ))
+        )}
       </div>
     </div>
   );

@@ -1,312 +1,248 @@
-import React, { useState, useEffect } from 'react';
-import { ShoppingBag, Plus, Trash2, CheckCircle2, Clock, Calendar as CalendarIcon, Tag, StickyNote, AlertCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { ShoppingBag, Plus, Trash2, CheckCircle2, Clock, X, Square, CheckSquare } from 'lucide-react';
 import { api } from '../api/api';
 import { ShoppingItem } from '../api/types';
+import { useAppContext } from '../context/AppContext';
+import { Button } from '../components/ui/Button';
+import { Card } from '../components/ui/Card';
+import { Input } from '../components/ui/Input';
+import { Badge } from '../components/ui/Badge';
+import { SectionHeader } from '../components/ui/SectionHeader';
+
+const CATEGORIES = ['Vegetables', 'Fruits', 'Dairy', 'Meat', 'Bakery', 'Drinks', 'Spices', 'Frozen', 'Household', 'Other'];
 
 const ShoppingListPage: React.FC = () => {
-  const [items, setItems] = useState<ShoppingItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { shoppingList, refreshData, showToast, requireAuth } = useAppContext();
   const [isAdding, setIsAdding] = useState(false);
-  
+
   // Form state
   const [name, setName] = useState('');
+  const [category, setCategory] = useState('Other');
   const [quantity, setQuantity] = useState('');
   const [note, setNote] = useState('');
-  const [targetDate, setTargetDate] = useState('');
-
-  const fetchItems = async () => {
-    try {
-      setLoading(true);
-      const data = await api.getShoppingList();
-      setItems(data || []);
-      setError(null);
-    } catch (err) {
-      console.error('Failed to fetch shopping list:', err);
-      setError('Could not load shopping list. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchItems();
-  }, []);
 
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
 
-    try {
-      await api.createShoppingItem(
-        name, 
-        quantity || undefined, 
-        note || undefined, 
-        targetDate || undefined
-      );
-      setName('');
-      setQuantity('');
-      setNote('');
-      setTargetDate('');
-      setIsAdding(false);
-      fetchItems();
-    } catch (err) {
-      console.error('Failed to add item:', err);
-      setError('Could not add item. Please try again.');
-    }
+    requireAuth(async () => {
+      try {
+        await api.createShoppingItem(
+          name,
+          category,
+          quantity || undefined,
+          note || undefined
+        );
+        setName('');
+        setCategory('Other');
+        setQuantity('');
+        setNote('');
+        setIsAdding(false);
+        showToast('Item added to list', 'success');
+        refreshData();
+      } catch (err) {
+        console.error('Failed to add item:', err);
+        showToast('Could not add item', 'error');
+      }
+    });
   };
 
   const handleMarkAsBought = async (id: string) => {
-    try {
-      await api.markShoppingItemAsBought(id);
-      fetchItems();
-    } catch (err) {
-      console.error('Failed to update item:', err);
-    }
+    requireAuth(async () => {
+      try {
+        await api.markShoppingItemAsBought(id);
+        refreshData();
+      } catch (err) {
+        console.error('Failed to update item:', err);
+      }
+    });
   };
 
   const handleDeleteItem = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this item?')) return;
-    try {
-      await api.deleteShoppingItem(id);
-      fetchItems();
-    } catch (err) {
-      console.error('Failed to delete item:', err);
-    }
+    requireAuth(async () => {
+      try {
+        await api.deleteShoppingItem(id);
+        refreshData();
+      } catch (err) {
+        console.error('Failed to delete item:', err);
+      }
+    });
   };
 
-  const pendingItems = items.filter(item => item.status === 'pending');
-  const boughtItems = items.filter(item => item.status === 'bought');
+  const pendingItems = shoppingList.filter(item => item.status === 'pending');
+  const boughtItems = shoppingList.filter(item => item.status === 'bought');
+
+  // Group pending items by category
+  const groupedItems = CATEGORIES.reduce((acc, cat) => {
+    const items = pendingItems.filter(item => item.category === cat);
+    if (items.length > 0) acc[cat] = items;
+    return acc;
+  }, {} as Record<string, ShoppingItem[]>);
+
+  // Add any categories not in the predefined list
+  pendingItems.forEach(item => {
+    if (!CATEGORIES.includes(item.category) && item.category) {
+      if (!groupedItems[item.category]) groupedItems[item.category] = [];
+      groupedItems[item.category].push(item);
+    }
+  });
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-8 pb-12 animate-fade-in">
+      {/* Header & Stats */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-black text-slate-800 tracking-tight">Shopping List</h1>
-          <p className="text-slate-500 font-medium mt-1">Manage items you need to buy.</p>
+          <h1 className="text-4xl font-black text-slate-800 tracking-tight">Shopping List</h1>
+          <div className="flex items-center gap-4 mt-2">
+            <Badge variant="primary" icon={<Clock size={14} />}>
+              {pendingItems.length} items to buy
+            </Badge>
+            <Badge variant="neutral" icon={<CheckCircle2 size={14} />}>
+              {boughtItems.length} bought
+            </Badge>
+          </div>
         </div>
-        <button
+
+        <Button
           onClick={() => setIsAdding(!isAdding)}
-          className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-indigo-200 transition-all active:scale-95 shrink-0"
+          variant={isAdding ? 'white' : 'primary'}
+          size="lg"
+          icon={isAdding ? <X size={20} /> : <Plus size={20} />}
+          className="shadow-xl"
         >
-          {isAdding ? <Clock size={20} /> : <Plus size={20} />}
-          {isAdding ? 'Cancel' : 'Add Item'}
-        </button>
+          {isAdding ? 'Close' : 'Quick Add'}
+        </Button>
       </div>
 
+      {/* Quick Add Bar */}
       {isAdding && (
-        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 animate-in slide-in-from-top duration-300">
-          <form onSubmit={handleAddItem} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Item Name</label>
-                <div className="relative">
-                  <Tag className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g., Milk, Bread, Eggs"
-                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-100 outline-none transition-all font-medium"
-                    required
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Quantity (Optional)</label>
-                <div className="relative">
-                  <ShoppingBag className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                  <input
-                    type="text"
-                    value={quantity}
-                    onChange={(e) => setQuantity(e.target.value)}
-                    placeholder="e.g., 2 liters, 1 loaf"
-                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-100 outline-none transition-all font-medium"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Target Date (Optional)</label>
-                <div className="relative">
-                  <CalendarIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                  <input
-                    type="date"
-                    value={targetDate}
-                    onChange={(e) => setTargetDate(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-100 outline-none transition-all font-medium"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Note (Optional)</label>
-                <div className="relative">
-                  <StickyNote className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                  <input
-                    type="text"
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    placeholder="Any specific details..."
-                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-100 outline-none transition-all font-medium"
-                  />
-                </div>
-              </div>
+        <Card className="p-8 border-primary-50 animate-bounce-in" hoverable={false}>
+          <form onSubmit={handleAddItem} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="md:col-span-2">
+              <Input
+                label="Item Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Oat Milk"
+                required
+              />
             </div>
-            <button
-              type="submit"
-              className="w-full bg-slate-900 hover:bg-black text-white py-4 rounded-2xl font-bold transition-all shadow-xl shadow-slate-200 active:scale-[0.98]"
-            >
-              Save Item
-            </button>
+            <div>
+              <Input
+                label="Category"
+                isSelect
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                options={CATEGORIES.map(cat => ({ label: cat, value: cat }))}
+              />
+            </div>
+            <div className="flex items-end">
+              <Button type="submit" className="w-full h-[60px]" size="lg">
+                Add Item
+              </Button>
+            </div>
+            <div className="md:col-span-2">
+              <Input
+                label="Quantity (Optional)"
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+                placeholder="e.g. 2 cartons"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Input
+                label="Note (Optional)"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Any brand preferences?"
+              />
+            </div>
           </form>
-        </div>
+        </Card>
       )}
 
-      {error && (
-        <div className="bg-red-50 border border-red-100 text-red-600 p-4 rounded-2xl flex items-center gap-3 animate-in fade-in duration-300">
-          <AlertCircle size={20} />
-          <p className="text-sm font-bold">{error}</p>
-        </div>
-      )}
-
-      {loading ? (
-        <div className="flex flex-col items-center justify-center py-20 space-y-4">
-          <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-slate-400 font-bold animate-pulse">Loading your shopping list...</p>
-        </div>
-      ) : items.length === 0 ? (
-        <div className="bg-white rounded-3xl p-12 text-center border border-slate-100 shadow-sm">
-          <div className="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-6">
-            <ShoppingBag size={40} />
-          </div>
-          <h3 className="text-xl font-black text-slate-800">Your shopping list is empty</h3>
-          <p className="text-slate-500 font-medium mt-2 max-w-md mx-auto">
-            Add items you need to buy, or plan meals to automatically find missing ingredients.
-          </p>
-          <button
-            onClick={() => setIsAdding(true)}
-            className="mt-8 text-indigo-600 font-bold hover:underline"
-          >
-            Add your first item
-          </button>
-        </div>
-      ) : (
-        <div className="space-y-10">
-          {/* Pending Items */}
-          <section>
-            <div className="flex items-center justify-between mb-4 px-2">
-              <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
-                Pending Items
-                <span className="bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-lg text-xs font-black">
-                  {pendingItems.length}
-                </span>
-              </h2>
+      {/* Main List */}
+      <div className="grid grid-cols-1 gap-10">
+        {Object.keys(groupedItems).length === 0 && pendingItems.length === 0 ? (
+          <div className="bg-white rounded-[3rem] p-20 text-center border border-dashed border-slate-200">
+            <div className="w-24 h-24 bg-primary-50 text-primary-500 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-inner">
+              <ShoppingBag size={48} strokeWidth={1.5} />
             </div>
-            
-            {pendingItems.length === 0 ? (
-              <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl p-8 text-center">
-                <p className="text-slate-400 font-bold">No pending items. You're all set!</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {pendingItems.map((item) => (
-                  <div 
-                    key={item.id} 
-                    className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all group"
-                  >
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex-grow">
-                        <h3 className="font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">
-                          {item.name}
-                        </h3>
-                        {item.quantity && (
-                          <span className="text-xs font-black text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-md mt-1 inline-block">
-                            {item.quantity}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          onClick={() => handleMarkAsBought(item.id)}
-                          className="p-2 text-green-500 hover:bg-green-50 rounded-xl transition-colors"
-                          title="Mark as bought"
-                        >
-                          <CheckCircle2 size={18} />
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteItem(item.id)}
-                          className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    </div>
-                    
-                    {(item.note || item.targetDate) && (
-                      <div className="mt-4 pt-4 border-t border-slate-50 space-y-2">
-                        {item.note && (
-                          <div className="flex items-start gap-2 text-xs text-slate-500">
-                            <StickyNote size={14} className="shrink-0 mt-0.5" />
-                            <p className="font-medium italic">{item.note}</p>
-                          </div>
-                        )}
-                        {item.targetDate && (
-                          <div className="flex items-center gap-2 text-xs text-slate-500">
-                            <CalendarIcon size={14} className="shrink-0" />
-                            <p className="font-medium">Needed by: {new Date(item.targetDate).toLocaleDateString()}</p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
+            <h3 className="text-2xl font-black text-slate-800 tracking-tight">Your list is clear</h3>     
+            <p className="text-slate-400 font-medium mt-2 max-w-xs mx-auto">
+              Ready for the next shop? Start adding items above or from your meal plan.
+            </p>
+          </div>
+        ) : (
+          Object.entries(groupedItems).map(([cat, items]) => (
+            <section key={cat} className="space-y-4">
+              <SectionHeader title={cat} badge={items.length} />
 
-          {/* Recently Bought */}
-          {boughtItems.length > 0 && (
-            <section>
-              <div className="flex items-center justify-between mb-4 px-2">
-                <h2 className="text-lg font-black text-slate-400 flex items-center gap-2">
-                  Recently Bought
-                  <span className="bg-slate-100 text-slate-400 px-2 py-0.5 rounded-lg text-xs font-black">
-                    {boughtItems.length}
-                  </span>
-                </h2>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {boughtItems.map((item) => (
-                  <div 
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {items.map((item) => (
+                  <Card
                     key={item.id} 
-                    className="bg-slate-50/50 p-5 rounded-3xl border border-slate-100 opacity-60 grayscale hover:grayscale-0 hover:opacity-100 transition-all group"
+                    className="p-5 flex items-center gap-4 group"
                   >
-                    <div className="flex justify-between items-start">
-                      <div className="flex-grow">
-                        <h3 className="font-bold text-slate-500 line-through decoration-slate-300">
-                          {item.name}
-                        </h3>
-                        {item.quantity && (
-                          <span className="text-[10px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md mt-1 inline-block">
-                            {item.quantity}
-                          </span>
-                        )}
-                      </div>
-                      <button 
-                        onClick={() => handleDeleteItem(item.id)}
-                        className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors opacity-0 group-hover:opacity-100"
-                      >
-                        <Trash2 size={18} />
-                      </button>
+                    <button
+                      onClick={() => handleMarkAsBought(item.id)}
+                      className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-300 hover:bg-primary-50 hover:text-primary-500 transition-all shrink-0"
+                    >
+                      <Square size={20} />
+                    </button>
+
+                    <div className="flex-grow min-w-0">
+                      <h3 className="font-black text-slate-800 truncate tracking-tight">{item.name}</h3>  
+                      {item.quantity && (
+                        <p className="text-[10px] font-bold text-primary-600 uppercase tracking-widest">{item.quantity}</p>
+                      )}
+                      {item.note && (
+                        <p className="text-xs text-slate-400 italic mt-1 truncate">{item.note}</p>        
+                      )}
                     </div>
-                  </div>
+
+                    <button
+                      onClick={() => handleDeleteItem(item.id)}
+                      className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-200 hover:bg-red-50 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100 shrink-0"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </Card>
                 ))}
               </div>
             </section>
-          )}
-        </div>
-      )}
+          ))
+        )}
+
+        {/* Recently Bought */}
+        {boughtItems.length > 0 && (
+          <section className="mt-8">
+            <SectionHeader title="Already in cart" dotColor="bg-slate-300" />
+
+            <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-4 mt-6">
+              {boughtItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="bg-slate-50/50 p-4 rounded-3xl border border-slate-100 flex items-center gap-3 group opacity-60 grayscale hover:opacity-100 hover:grayscale-0 transition-all"
+                >
+                  <div className="text-primary-500 shrink-0">
+                    <CheckSquare size={20} />
+                  </div>
+                  <div className="flex-grow min-w-0">
+                    <h3 className="text-sm font-bold text-slate-500 line-through decoration-slate-300 truncate">{item.name}</h3>
+                  </div>
+                  <button
+                    onClick={() => handleDeleteItem(item.id)}
+                    className="text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
     </div>
   );
 };

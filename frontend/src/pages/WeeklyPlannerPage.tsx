@@ -1,21 +1,29 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { api } from '../api/api';
-import { Calendar, Trash2, Plus, ChevronLeft, ChevronRight, Utensils, ShoppingCart, AlertTriangle, CheckCircle2, Search, X } from 'lucide-react';
+import { Calendar, Trash2, Plus, ChevronRight, ShoppingCart, AlertTriangle, CheckCircle2, Search, X, Coffee, Sun, Moon } from 'lucide-react';
+import { Button } from '../components/ui/Button';
+import { Card } from '../components/ui/Card';
+import { Input } from '../components/ui/Input';
+import { Badge } from '../components/ui/Badge';
+import { SectionHeader } from '../components/ui/SectionHeader';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-const MEAL_TYPES = ['Breakfast', 'Lunch', 'Dinner'];
+const MEAL_TYPES = [
+  { name: 'Breakfast', icon: <Coffee size={18} />, color: 'text-amber-500', bg: 'bg-amber-50' },
+  { name: 'Lunch', icon: <Sun size={18} />, color: 'text-primary-500', bg: 'bg-primary-50' },
+  { name: 'Dinner', icon: <Moon size={18} />, color: 'text-indigo-500', bg: 'bg-indigo-50' }
+];
 
 const WeeklyPlannerPage: React.FC = () => {
-  const { meals, planner, refreshData, loading, showToast, addMissingIngredientsToShoppingList } = useAppContext();
+  const { meals, planner, refreshData, loading, showToast, addMissingIngredientsToShoppingList, requireAuth } = useAppContext();
   const [day, setDay] = useState('Monday');
   const [mealType, setMealType] = useState('Lunch');
   const [mealSearch, setMealSearch] = useState('');
-  const [selectedMealId, setSelectedMealId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
-  
+
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -32,41 +40,41 @@ const WeeklyPlannerPage: React.FC = () => {
     e.preventDefault();
     const finalMealName = mealSearch.trim();
     if (!finalMealName) return;
-    
-    setIsSubmitting(true);
-    try {
-      // 1. Get or create the meal first
-      const meal = await api.getOrCreateMeal(finalMealName);
-      
-      // 2. Add to planner
-      await api.createPlannerEntry(day, mealType, meal.id);
-      
-      showToast(
-        meals.find(m => m.id === meal.id) 
-          ? 'Added to your schedule!' 
-          : `Created "${meal.name}" and added to schedule!`, 
-        'success'
-      );
-      
-      setMealSearch('');
-      setSelectedMealId(null);
-      setShowQuickAdd(false);
-      refreshData();
-    } catch (err) {
-      showToast('Failed to add entry', 'error');
-    } finally {
-      setIsSubmitting(false);
-    }
+
+    requireAuth(async () => {
+      setIsSubmitting(true);
+      try {
+        const meal = await api.getOrCreateMeal(finalMealName);
+        await api.createPlannerEntry(day, mealType, meal.id);
+
+        showToast(
+          meals.find(m => m.id === meal.id)
+            ? 'Added to your schedule!'
+            : `Created "${meal.name}" and added to schedule!`,
+          'success'
+        );
+
+        setMealSearch('');
+        setShowQuickAdd(false);
+        refreshData();
+      } catch (err) {
+        showToast('Failed to add entry', 'error');
+      } finally {
+        setIsSubmitting(false);
+      }
+    });
   };
 
   const handleDeleteEntry = async (id: string) => {
-    try {
-      await api.deletePlannerEntry(id);
-      showToast('Entry removed from schedule', 'success');
-      refreshData();
-    } catch (err) {
-      showToast('Failed to remove entry', 'error');
-    }
+    requireAuth(async () => {
+      try {
+        await api.deletePlannerEntry(id);
+        showToast('Entry removed', 'success');
+        refreshData();
+      } catch (err) {
+        showToast('Failed to remove entry', 'error');
+      }
+    });
   };
 
   const getMissingIngredientsCount = (mealId: string) => {
@@ -75,82 +83,74 @@ const WeeklyPlannerPage: React.FC = () => {
     return meal.ingredients.filter(ing => !ing.isAvailable).length;
   };
 
-  const filteredMeals = meals.filter(m => 
+  const filteredMeals = meals.filter(m =>
     m.name.toLowerCase().includes(mealSearch.toLowerCase())
   );
 
   const exactMatch = meals.find(m => m.name.toLowerCase() === mealSearch.toLowerCase().trim());
 
-  if (loading) return (
-    <div className="flex flex-col items-center justify-center h-64 gap-4">
-      <div className="w-12 h-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
+  if (loading && planner.length === 0) return (
+    <div className="flex flex-col items-center justify-center h-96 gap-4">
+      <div className="w-12 h-12 border-4 border-primary-100 border-t-primary-600 rounded-full animate-spin"></div>
       <p className="text-slate-400 font-bold animate-pulse uppercase tracking-widest text-xs">Loading Schedule...</p>
     </div>
   );
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
+    <div className="space-y-10 pb-20 animate-fade-in">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">       
         <div>
-          <h1 className="text-3xl font-black text-slate-800 tracking-tight">Weekly Planner</h1>
-          <p className="text-slate-500 font-medium mt-1">Decide in advance what you'll eat this week.</p>
+          <h1 className="text-4xl font-black text-slate-800 tracking-tight">Weekly Planner</h1>
+          <p className="text-slate-500 font-medium mt-1">What's on the menu this week?</p>
         </div>
-        
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setShowQuickAdd(!showQuickAdd)}
-            className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95"
-          >
-            <Plus size={20} /> Quick Plan
-          </button>
-        </div>
+
+        <Button
+          onClick={() => setShowQuickAdd(!showQuickAdd)}
+          variant={showQuickAdd ? 'white' : 'primary'}
+          size="lg"
+          icon={showQuickAdd ? <X size={20} /> : <Plus size={20} />}
+          className="shadow-xl"
+        >
+          {showQuickAdd ? 'Cancel' : 'Plan a Meal'}
+        </Button>
       </div>
 
       {showQuickAdd && (
-        <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 animate-in slide-in-from-top-4 duration-300">
+        <Card className="p-8 border-primary-50 animate-bounce-in" hoverable={false}>
           <h2 className="text-xl font-black mb-6 flex items-center gap-2 text-slate-800">
-            <Calendar size={24} className="text-indigo-600" /> Schedule a Meal
+            <Calendar size={24} className="text-primary-500" /> New Plan Entry
           </h2>
           <form onSubmit={handleCreateEntry} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="space-y-2">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Day</label>
-              <select 
-                value={day} 
-                onChange={(e) => setDay(e.target.value)} 
-                className="w-full bg-slate-50 border-slate-100 rounded-2xl p-4 font-bold text-slate-700 focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 outline-none transition-all appearance-none cursor-pointer"
-              >
-                {DAYS.map(d => <option key={d} value={d}>{d}</option>)}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Meal Time</label>
-              <select 
-                value={mealType} 
-                onChange={(e) => setMealType(e.target.value)} 
-                className="w-full bg-slate-50 border-slate-100 rounded-2xl p-4 font-bold text-slate-700 focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 outline-none transition-all appearance-none cursor-pointer"
-              >
-                {MEAL_TYPES.map(m => <option key={m} value={m}>{m}</option>)}
-              </select>
-            </div>
-            <div className="space-y-2 relative" ref={dropdownRef}>
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Meal Name</label>
-              <div className="relative">
-                <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input 
-                  type="text"
-                  value={mealSearch}
-                  onChange={(e) => {
-                    setMealSearch(e.target.value);
-                    setShowDropdown(true);
-                  }}
-                  onFocus={() => setShowDropdown(true)}
-                  placeholder="Type or select a meal..."
-                  className="w-full pl-12 pr-4 py-4 bg-slate-50 border-slate-100 rounded-2xl font-bold text-slate-700 focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 outline-none transition-all"
-                />
-              </div>
+            <Input
+              label="Day"
+              isSelect
+              value={day}
+              onChange={(e) => setDay(e.target.value)}
+              options={DAYS.map(d => ({ label: d, value: d }))}
+            />
+            <Input
+              label="Meal Time"
+              isSelect
+              value={mealType}
+              onChange={(e) => setMealType(e.target.value)}
+              options={MEAL_TYPES.map(m => ({ label: m.name, value: m.name }))}
+            />
+            
+            <div className="relative" ref={dropdownRef}>
+              <Input
+                label="Meal Name"
+                value={mealSearch}
+                onChange={(e) => {
+                  setMealSearch(e.target.value);
+                  setShowDropdown(true);
+                }}
+                onFocus={() => setShowDropdown(true)}
+                placeholder="e.g. Pasta Salad"
+                autoComplete="off"
+              />
               
               {showDropdown && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-slate-100 z-50 max-h-60 overflow-y-auto py-2">
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-100 z-50 max-h-60 overflow-y-auto py-2">
                   {filteredMeals.length > 0 ? (
                     filteredMeals.map(m => (
                       <button
@@ -158,36 +158,31 @@ const WeeklyPlannerPage: React.FC = () => {
                         type="button"
                         onClick={() => {
                           setMealSearch(m.name);
-                          setSelectedMealId(m.id);
                           setShowDropdown(false);
                         }}
-                        className="w-full text-left px-6 py-3 hover:bg-indigo-50 flex items-center justify-between group"
+                        className="w-full text-left px-6 py-3 hover:bg-primary-50 flex items-center justify-between group"
                       >
                         <span className="font-bold text-slate-700">{m.name}</span>
-                        <ChevronRight size={14} className="text-slate-300 group-hover:text-indigo-500 transition-colors" />
+                        <ChevronRight size={14} className="text-slate-300 group-hover:text-primary-500 transition-colors" />
                       </button>
                     ))
                   ) : mealSearch.trim() ? (
-                    <div className="px-6 py-3 text-slate-400 italic text-sm">
-                      No matching meals found.
-                    </div>
+                    <div className="px-6 py-3 text-slate-400 italic text-sm">No matching meals.</div>     
                   ) : (
-                    <div className="px-6 py-3 text-slate-400 italic text-sm">
-                      Start typing to search...
-                    </div>
+                    <div className="px-6 py-3 text-slate-400 italic text-sm">Start typing...</div>        
                   )}
-                  
+
                   {mealSearch.trim() && !exactMatch && (
                     <button
                       type="button"
                       onClick={() => setShowDropdown(false)}
-                      className="w-full text-left px-6 py-4 bg-indigo-50/50 hover:bg-indigo-100 border-t border-indigo-50 flex items-center gap-3"
+                      className="w-full text-left px-6 py-4 bg-primary-50/50 hover:bg-primary-100 border-t border-primary-50 flex items-center gap-3"
                     >
-                      <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white shrink-0">
+                      <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center text-white shrink-0">
                         <Plus size={16} />
                       </div>
                       <div>
-                        <p className="text-xs font-black text-indigo-600 uppercase tracking-widest">Create New Meal</p>
+                        <p className="text-[10px] font-black text-primary-600 uppercase tracking-widest">Create New</p>
                         <p className="font-bold text-slate-700">"{mealSearch}"</p>
                       </div>
                     </button>
@@ -195,121 +190,108 @@ const WeeklyPlannerPage: React.FC = () => {
                 </div>
               )}
             </div>
+
             <div className="flex items-end">
-              <button
-                type="submit"
-                disabled={isSubmitting || !mealSearch.trim()}
-                className="w-full bg-slate-900 text-white rounded-2xl py-4 font-black shadow-xl shadow-slate-100 hover:bg-black transition-all active:scale-95 disabled:opacity-50"
+              <Button 
+                type="submit" 
+                className="w-full h-[60px]" 
+                isLoading={isSubmitting}
+                disabled={!mealSearch.trim()}
+                size="lg"
               >
-                {isSubmitting ? 'Processing...' : 'Add to Schedule'}
-              </button>
+                Add to Schedule
+              </Button>
             </div>
           </form>
-          
-          {mealSearch.trim() && exactMatch && (
-            <div className="mt-4 flex items-center gap-2 text-indigo-600 bg-indigo-50 px-4 py-2 rounded-xl text-xs font-bold animate-in fade-in slide-in-from-left-2">
-              <CheckCircle2 size={14} />
-              <span>Matching meal found in your library: <strong>{exactMatch.name}</strong></span>
-            </div>
-          )}
-        </div>
+        </Card>
       )}
 
-      {/* Modern Calendar Grid */}
-      <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden relative">
-        <div className="grid grid-cols-7 border-b border-slate-100 bg-slate-50/50 backdrop-blur-sm sticky top-0 z-10 hidden md:grid">
-          {DAYS.map(d => (
-            <div key={d} className="p-6 text-center border-r last:border-r-0 border-slate-100">
-              <span className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">{d.substring(0, 3)}</span>
+      {/* Days Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {DAYS.map(d => (
+          <div key={d} className="bg-white rounded-[2.5rem] shadow-sm border border-slate-50 flex flex-col overflow-hidden h-full">
+            <div className="p-6 bg-slate-50/50 border-b border-slate-50 flex items-center justify-between">
+              <h3 className="font-black text-slate-800 uppercase tracking-[0.2em] text-sm">{d}</h3>       
+              <span className="w-8 h-8 rounded-full bg-white shadow-sm border border-slate-100 flex items-center justify-center text-[10px] font-black text-primary-600">
+                {planner.filter(e => e.dayOfWeek === d).length}
+              </span>
             </div>
-          ))}
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-7 min-h-[700px]">
-          {DAYS.map(d => (
-            <div key={d} className="border-r last:border-r-0 border-slate-100 flex flex-col group/day hover:bg-slate-50/30 transition-colors">
-              <div className="md:hidden bg-indigo-600 text-white p-4 font-black text-center uppercase text-xs tracking-widest">
-                {d}
-              </div>
-              
-              <div className="p-3 flex-grow space-y-8">
-                {MEAL_TYPES.map(type => {
-                  const dayEntries = planner.filter(entry => entry.dayOfWeek === d && entry.mealType === type);
-                  
-                  return (
-                    <div key={type} className="space-y-3">
-                      <div className="flex items-center justify-between px-1">
-                        <h4 className="text-[9px] font-black text-slate-300 uppercase tracking-widest">{type}</h4>
-                        <button 
-                          className="text-slate-200 hover:text-indigo-500 transition-all"
-                          onClick={() => { setDay(d); setMealType(type); setShowQuickAdd(true); }}
-                        >
-                          <Plus size={10} />
-                        </button>
+
+            <div className="p-4 flex-grow space-y-8">
+              {MEAL_TYPES.map(type => {
+                const dayEntries = planner.filter(entry => entry.dayOfWeek === d && entry.mealType === type.name);
+
+                return (
+                  <div key={type.name} className="space-y-4">
+                    <div className="flex items-center gap-2 px-2">
+                      <div className={`${type.bg} ${type.color} p-1.5 rounded-lg`}>
+                        {type.icon}
                       </div>
-                      
-                      <div className="space-y-3 min-h-[60px]">
-                        {dayEntries.map(entry => {
-                          const missingCount = getMissingIngredientsCount(entry.mealId);
-                          
-                          return (
-                            <div 
-                              key={entry.id} 
-                              className="bg-white border border-slate-100 p-4 rounded-2xl shadow-sm relative group/item hover:border-indigo-200 hover:shadow-md transition-all duration-300"
-                            >
-                              <div className="flex flex-col gap-1 pr-6">
-                                <p className="text-sm font-black text-slate-800 leading-tight">{entry.meal?.name}</p>
-                              </div>
-                              
-                              <button 
-                                onClick={() => handleDeleteEntry(entry.id)}
-                                className="absolute top-2 right-2 p-1 text-slate-200 hover:text-red-500 transition-all opacity-0 group-hover/item:opacity-100"
-                              >
-                                <Trash2 size={12} />
-                              </button>
-                              
-                              <div className="mt-3 pt-3 border-t border-slate-50 space-y-2">
-                                {missingCount > 0 ? (
-                                  <div className="flex flex-col gap-2">
-                                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-amber-600">
-                                      <AlertTriangle size={12} />
-                                      <span>{missingCount} missing items</span>
-                                    </div>
-                                    <button
-                                      onClick={() => addMissingIngredientsToShoppingList(entry.mealId)}
-                                      className="flex items-center justify-center gap-1.5 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-[9px] font-black uppercase tracking-tight hover:bg-indigo-100 transition-colors"
-                                    >
-                                      <ShoppingCart size={10} />
-                                      Add to Shop List
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-green-600">
-                                    <CheckCircle2 size={12} />
-                                    <span>All ingredients ready</span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                        
-                        {dayEntries.length === 0 && (
-                          <div 
-                            onClick={() => { setDay(d); setMealType(type); setShowQuickAdd(true); }}
-                            className="border-2 border-dashed border-slate-50 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 opacity-30 hover:opacity-100 hover:bg-slate-50 hover:border-slate-200 transition-all cursor-pointer"
-                          >
-                             <Plus size={14} className="text-slate-300" />
-                          </div>
-                        )}
-                      </div>
+                      <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{type.name}</h4>
                     </div>
-                  );
-                })}
-              </div>
+
+                    <div className="space-y-3">
+                      {dayEntries.map(entry => {
+                        const missingCount = getMissingIngredientsCount(entry.mealId);
+
+                        return (
+                          <Card
+                            key={entry.id}
+                            className="p-5 relative group"    
+                          >
+                            <button
+                              onClick={() => handleDeleteEntry(entry.id)}
+                              className="absolute -top-2 -right-2 w-8 h-8 bg-white text-slate-300 hover:text-red-500 shadow-sm border border-slate-50 rounded-full flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 z-10"
+                            >
+                              <X size={14} />
+                            </button>
+
+                            <p className="font-black text-slate-800 leading-tight pr-4">{entry.meal?.name}</p>
+
+                            <div className="mt-4 pt-4 border-t border-slate-50 flex flex-col gap-3">      
+                              {missingCount > 0 ? (
+                                <>
+                                  <div className="flex items-center gap-1.5 text-[10px] font-black text-amber-600 uppercase tracking-tighter">
+                                    <AlertTriangle size={12} />
+                                    <span>{missingCount} missing items</span>
+                                  </div>
+                                  <Button
+                                    onClick={() => addMissingIngredientsToShoppingList(entry.mealId)}     
+                                    variant="secondary"
+                                    size="sm"
+                                    className="w-full text-[10px]"
+                                    icon={<ShoppingCart size={12} />}
+                                  >
+                                    Get Items
+                                  </Button>
+                                </>
+                              ) : (
+                                <div className="flex items-center gap-1.5 text-[10px] font-black text-emerald-500 uppercase tracking-tighter">
+                                  <CheckCircle2 size={12} />
+                                  <span>Ready to cook</span>
+                                </div>
+                              )}
+                            </div>
+                          </Card>
+                        );
+                      })}
+
+                      {dayEntries.length === 0 && (
+                        <button
+                          onClick={() => { setDay(d); setMealType(type.name); setShowQuickAdd(true); }}   
+                          className="w-full border-2 border-dashed border-slate-100 rounded-[1.5rem] p-4 flex flex-col items-center justify-center gap-2 opacity-40 hover:opacity-100 hover:bg-primary-50 hover:border-primary-100 hover:text-primary-600 transition-all group"
+                        >
+                           <Plus size={16} className="group-hover:scale-110 transition-transform" />      
+                           <span className="text-[10px] font-black uppercase tracking-widest">Plan</span> 
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
     </div>
   );

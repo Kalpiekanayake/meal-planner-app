@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Utensils, Apple, Calendar, Bell, Menu, X, ChevronRight, LayoutDashboard, Settings, LogOut, Search } from 'lucide-react';
+import { Utensils, Apple, Calendar, Bell, LogOut, ShoppingBag, LayoutDashboard, Menu, X, UserPlus, LogIn } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   const { notifications } = useAppContext();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const { user, logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Close mobile menu on route change
@@ -15,201 +16,206 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   }, [location.pathname]);
 
   const navItems = [
-    { name: 'Dashboard', path: '/', icon: <LayoutDashboard size={20} />, active: location.pathname === '/' },
     { name: 'Weekly Planner', path: '/planner', icon: <Calendar size={20} />, active: location.pathname === '/planner' },
     { name: 'Meals', path: '/meals', icon: <Utensils size={20} />, active: location.pathname === '/meals' },
-    { name: 'Ingredients', path: '/ingredients', icon: <Apple size={20} />, active: location.pathname === '/ingredients' },
-    { name: 'Shopping List', path: '/shopping', icon: <Search size={20} />, active: location.pathname === '/shopping' },
-    { name: 'Notifications', path: '/notifications', icon: <Bell size={20} />, active: location.pathname === '/notifications', badge: notifications.length },
+    { name: 'Pantry', path: '/ingredients', icon: <Apple size={20} />, active: location.pathname === '/ingredients' },
+    { name: 'Shopping List', path: '/shopping', icon: <ShoppingBag size={20} />, active: location.pathname === '/shopping' },
   ];
 
-  const NavLink = ({ item, isMobile = false }: { item: any, isMobile?: boolean }) => (
-    <Link
-      to={item.path}
-      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 group relative ${
-        item.active
-          ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200'
-          : 'text-gray-500 hover:bg-indigo-50 hover:text-indigo-600'
-      }`}
-    >
-      <div className={`${item.active ? 'scale-110' : 'group-hover:scale-110 group-hover:rotate-3'} transition-transform duration-300`}>
-        {item.icon}
-      </div>
-      {(isSidebarOpen || isMobile) && (
-        <span className="flex-grow font-semibold tracking-tight">{item.name}</span>
-      )}
-      {item.badge > 0 && (isSidebarOpen || isMobile) && (
-        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${item.active ? 'bg-white text-indigo-600' : 'bg-red-500 text-white animate-pulse'}`}>
-          {item.badge}
-        </span>
-      )}
-      {item.active && (isSidebarOpen || isMobile) && (
-        <ChevronRight size={14} className="opacity-50" />
-      )}
-      {!isSidebarOpen && !isMobile && (
-        <div className="absolute left-full ml-4 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
-          {item.name}
-        </div>
-      )}
-    </Link>
-  );
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+  };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900">
-      {/* Desktop Sidebar */}
-      <aside 
-        className={`${
-          isSidebarOpen ? 'w-64' : 'w-20'
-        } hidden md:flex flex-col bg-white border-r border-slate-200 transition-all duration-300 ease-in-out fixed inset-y-0 z-30`}
-      >
-        <div className="h-20 px-6 flex items-center justify-between">
-          {isSidebarOpen ? (
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-100 ring-4 ring-indigo-50">
-                <Utensils size={24} />
-              </div>
-              <span className="text-xl font-black tracking-tight text-slate-800">Crave</span>
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 selection:bg-primary-100 selection:text-primary-900">
+      {/* Top Navigation Header */}
+      <header className="fixed top-0 inset-x-0 h-20 bg-white/80 backdrop-blur-xl border-b border-slate-100 z-50">
+        <div className="max-w-7xl mx-auto h-full px-6 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-primary-400 to-primary-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary-100 rotate-3">
+              <ShoppingBag size={24} strokeWidth={2.5} />
             </div>
-          ) : (
-            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-100 mx-auto">
-              <Utensils size={24} />
-            </div>
-          )}
-        </div>
+            <span className="text-2xl font-black tracking-tight text-slate-800">Crave</span>
+          </Link>
 
-        <div className="flex-grow px-4 mt-4 space-y-1">
-          <p className={`px-3 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest ${!isSidebarOpen && 'text-center'}`}>
-            {isSidebarOpen ? 'Menu' : '•••'}
-          </p>
-          {navItems.map((item) => (
-            <NavLink key={item.path} item={item} />
-          ))}
-          
-          <div className="pt-8 space-y-1">
-            <p className={`px-3 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest ${!isSidebarOpen && 'text-center'}`}>
-              {isSidebarOpen ? 'Preferences' : '•••'}
-            </p>
-            <button className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-gray-500 hover:bg-slate-50 transition-all ${!isSidebarOpen && 'justify-center'}`}>
-              <Settings size={20} />
-              {isSidebarOpen && <span>Settings</span>}
+          {/* Desktop Nav Links (for logged in users) */}
+          {user && (
+            <nav className="hidden lg:flex items-center gap-1">
+              {navItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                    item.active
+                      ? 'bg-primary-50 text-primary-600'
+                      : 'text-slate-500 hover:text-primary-600 hover:bg-slate-50'
+                  }`}
+                >
+                  {item.name}
+                </Link>
+              ))}
+            </nav>
+          )}
+
+          {/* Right Side Actions */}
+          <div className="flex items-center gap-4">
+            {user ? (
+              <div className="flex items-center gap-4">
+                <Link to="/notifications" className="relative w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 hover:text-primary-600 transition-all border border-slate-50">
+                  <Bell size={20} />
+                  {notifications.filter(n => !n.isRead).length > 0 && (
+                    <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+                  )}
+                </Link>
+                <div className="h-8 w-px bg-slate-100 hidden sm:block"></div>
+                <div className="flex items-center gap-3 pl-1">
+                  <div className="hidden sm:block text-right">
+                    <p className="text-sm font-black text-slate-800 truncate max-w-[120px]">{user.name}</p>
+                    <button onClick={logout} className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-red-500 transition-colors">Sign Out</button>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-primary-500 flex items-center justify-center text-white font-black text-sm shadow-lg shadow-primary-100 border border-primary-400">
+                    {getInitials(user.name)}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <Link
+                  to="/login"
+                  className="hidden sm:flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all"
+                >
+                  <LogIn size={18} />
+                  Sign In
+                </Link>
+                <Link
+                  to="/register"
+                  className="flex items-center gap-2 px-6 py-2.5 bg-primary-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-primary-100 hover:bg-primary-600 transition-all active:scale-95"
+                >
+                  <UserPlus size={18} />
+                  Join Free
+                </Link>
+              </div>
+            )}
+            
+            {/* Mobile Menu Toggle */}
+            <button 
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="lg:hidden p-2 text-slate-600 hover:bg-slate-50 rounded-xl"
+            >
+              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>
         </div>
-
-        <div className="p-4 border-t border-slate-100 mt-auto">
-          <div className={`flex items-center gap-3 p-2 rounded-2xl hover:bg-slate-50 transition-colors group cursor-pointer ${!isSidebarOpen && 'justify-center'}`}>
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold shrink-0">
-              JD
-            </div>
-            {isSidebarOpen && (
-              <div className="flex-grow min-w-0">
-                <p className="text-sm font-bold truncate">John Doe</p>
-                <p className="text-[10px] text-slate-400 truncate font-medium">Pro Member</p>
-              </div>
-            )}
-            {isSidebarOpen && <LogOut size={16} className="text-slate-300 group-hover:text-red-500 transition-colors" />}
-          </div>
-        </div>
-
-        {/* Toggle Sidebar Button */}
-        <button 
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className="absolute -right-3 top-24 w-6 h-6 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-400 hover:text-indigo-600 shadow-sm z-40 transition-colors"
-        >
-          {isSidebarOpen ? <X size={12} /> : <Menu size={12} />}
-        </button>
-      </aside>
-
-      {/* Mobile Top Nav */}
-      <header className="md:hidden fixed top-0 inset-x-0 h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 z-40">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white">
-            <Utensils size={18} />
-          </div>
-          <span className="font-black text-lg">Crave</span>
-        </div>
-        <button 
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="p-2 text-slate-600 hover:bg-slate-50 rounded-lg"
-        >
-          {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
       </header>
 
-      {/* Mobile Menu Overlay */}
+      {/* Mobile Sidebar Overlay */}
       {isMobileMenuOpen && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 md:hidden">
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[60] lg:hidden animate-in fade-in duration-300">
           <div className="fixed inset-y-0 right-0 w-72 bg-white shadow-2xl p-6 flex flex-col animate-in slide-in-from-right duration-300">
             <div className="flex items-center justify-between mb-8">
-              <span className="font-black text-xl">Menu</span>
-              <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 hover:bg-slate-50 rounded-lg">
+              <span className="text-xl font-black text-slate-800">Menu</span>
+              <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 hover:bg-slate-50 rounded-xl text-slate-400">
                 <X size={24} />
               </button>
             </div>
+            
             <nav className="space-y-2 flex-grow">
-              {navItems.map((item) => (
-                <NavLink key={item.path} item={item} isMobile />
+              <Link
+                to="/"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-base font-bold transition-all ${
+                  location.pathname === '/' ? 'bg-primary-50 text-primary-600' : 'text-slate-500 hover:bg-slate-50'
+                }`}
+              >
+                <LayoutDashboard size={20} />
+                Home
+              </Link>
+              
+              {user && navItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-base font-bold transition-all ${
+                    item.active ? 'bg-primary-50 text-primary-600' : 'text-slate-500 hover:bg-slate-50'
+                  }`}
+                >
+                  {item.icon}
+                  {item.name}
+                </Link>
               ))}
             </nav>
-            <div className="pt-6 border-t border-slate-100">
-               <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl">
-                <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-bold">JD</div>
-                <div>
-                  <p className="text-sm font-bold">John Doe</p>
-                  <p className="text-xs text-slate-500 font-medium">j.doe@example.com</p>
-                </div>
-               </div>
+
+            <div className="pt-6 border-t border-slate-100 flex flex-col gap-4">
+              {!user ? (
+                <>
+                  <Link
+                    to="/login"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center justify-center gap-2 py-4 bg-slate-50 text-slate-700 font-bold rounded-2xl"
+                  >
+                    <LogIn size={20} />
+                    Sign In
+                  </Link>
+                  <Link
+                    to="/register"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center justify-center gap-2 py-4 bg-primary-500 text-white font-bold rounded-2xl shadow-lg shadow-primary-100"
+                  >
+                    <UserPlus size={20} />
+                    Create Account
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl">
+                    <div className="w-10 h-10 rounded-xl bg-primary-500 flex items-center justify-center text-white font-bold">
+                      {getInitials(user.name)}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-black text-slate-800 truncate">{user.name}</p>
+                      <p className="text-xs text-slate-500 font-medium truncate">{user.email}</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => { logout(); setIsMobileMenuOpen(false); }}
+                    className="w-full flex items-center justify-center gap-2 py-4 bg-red-50 text-red-600 font-bold rounded-2xl"
+                  >
+                    <LogOut size={20} />
+                    Sign Out
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
       )}
 
-      {/* Main Area */}
-      <div className={`flex-grow flex flex-col min-h-screen transition-all duration-300 ${isSidebarOpen ? 'md:ml-64' : 'md:ml-20'}`}>
-        {/* Header */}
-        <header className="hidden md:flex h-20 items-center justify-between px-8 bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-20">
-          <div>
-            <h2 className="text-xl font-black text-slate-800 tracking-tight">
-              {navItems.find(item => item.active)?.name || 'Dashboard'}
-            </h2>
-            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-0.5">
-              Welcome back, John 👋
-            </p>
-          </div>
+      {/* Main Content Area */}
+      <main className="flex-grow pt-20">
+        <div className="max-w-7xl mx-auto px-6 py-10 animate-in fade-in duration-700">
+          {children}
+        </div>
+      </main>
 
-          <div className="flex items-center gap-6">
-            <div className="relative group hidden lg:block">
-              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
-              <input 
-                type="text" 
-                placeholder="Search meals..." 
-                className="pl-10 pr-4 py-2.5 bg-slate-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-indigo-100 w-64 outline-none transition-all"
-              />
+      {/* Simple Footer */}
+      <footer className="bg-white border-t border-slate-100 py-10">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-primary-500 rounded-lg flex items-center justify-center text-white">
+              <ShoppingBag size={14} />
             </div>
-            
-            <button className="relative w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-500 hover:bg-indigo-50 hover:text-indigo-600 transition-all">
-              <Bell size={20} />
-              {notifications.length > 0 && <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>}
-            </button>
-            
-            <div className="w-[1px] h-8 bg-slate-200"></div>
-            
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-bold text-slate-600 hidden xl:inline">Premium Plan</span>
-              <div className="px-3 py-1 bg-green-100 text-green-700 text-[10px] font-black rounded-full uppercase tracking-tighter ring-1 ring-green-200">
-                Active
-              </div>
-            </div>
+            <span className="font-black text-slate-800">Crave</span>
           </div>
-        </header>
-
-        {/* Content */}
-        <main className="flex-grow p-4 md:p-8 pt-20 md:pt-8 bg-slate-50">
-          <div className="max-w-7xl mx-auto pb-12">
-            {children}
+          <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">
+            © 2026 Crave Meal Planner. Built for busy kitchens.
+          </p>
+          <div className="flex gap-6">
+            <a href="#" className="text-slate-400 hover:text-primary-500 text-xs font-bold uppercase tracking-widest transition-colors">Privacy</a>
+            <a href="#" className="text-slate-400 hover:text-primary-500 text-xs font-bold uppercase tracking-widest transition-colors">Terms</a>
           </div>
-        </main>
-      </div>
+        </div>
+      </footer>
     </div>
   );
 };

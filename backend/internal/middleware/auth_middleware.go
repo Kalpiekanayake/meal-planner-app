@@ -12,20 +12,24 @@ func AuthMiddleware(authService services.AuthService) func(http.Handler) http.Ha
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authHeader := r.Header.Get("Authorization")
 			if authHeader == "" {
-				http.Error(w, "authorization header missing", http.StatusUnauthorized)
+				// No token, but we allow the request to proceed
+				// Handlers must check if "user_id" is present for protected actions
+				next.ServeHTTP(w, r)
 				return
 			}
 
 			tokenParts := strings.Split(authHeader, " ")
 			if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
-				http.Error(w, "invalid authorization header format", http.StatusUnauthorized)
+				// Invalid format, but we allow it to proceed as guest
+				next.ServeHTTP(w, r)
 				return
 			}
 
 			tokenString := tokenParts[1]
 			userID, err := authService.ValidateToken(tokenString)
 			if err != nil {
-				http.Error(w, "invalid or expired token", http.StatusUnauthorized)
+				// Invalid token, proceed as guest
+				next.ServeHTTP(w, r)
 				return
 			}
 
