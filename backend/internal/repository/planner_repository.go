@@ -50,7 +50,9 @@ func (p *plannerRepo) GetPlannerEntriesByDay(ctx context.Context, dayOfWeek stri
 		db.Planner.DayOfWeek.Equals(dayOfWeek),
 		db.Planner.UserID.Equals(userID),
 	).With(
-		db.Planner.Meal.Fetch(),
+		db.Planner.Meal.Fetch().With(
+			db.Meal.Ingredients.Fetch(),
+		),
 	).Exec(ctx)
 }
 

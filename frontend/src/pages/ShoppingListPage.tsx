@@ -95,23 +95,8 @@ const ShoppingListPage: React.FC = () => {
     });
   };
 
-  // Process list: Merge duplicates and filter
-  const processedList = useMemo(() => {
-    const merged: Record<string, ShoppingItem> = {};
-    
-    shoppingList.forEach(item => {
-      const key = `${item.name.toLowerCase()}-${item.status}`;
-      
-      if (!merged[key]) {
-        merged[key] = { ...item };
-      }
-    });
-    
-    return Object.values(merged);
-  }, [shoppingList]);
-
   const filteredList = useMemo(() => {
-    return processedList
+    return shoppingList
       .filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
       .sort((a, b) => {
         // Pending first
@@ -120,7 +105,7 @@ const ShoppingListPage: React.FC = () => {
         // Then by creation date (newest first)
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       });
-  }, [processedList, searchQuery]);
+  }, [shoppingList, searchQuery]);
 
   const pendingCount = shoppingList.filter(i => i.status === 'pending').length;
   const boughtCount = shoppingList.filter(i => i.status === 'bought').length;

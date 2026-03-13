@@ -226,11 +226,10 @@ const IngredientsPage: React.FC = () => {
 
               <div className="mt-8 pt-6 border-t border-slate-50 flex flex-col gap-3">
                 <Button
-                  onClick={() => !ing.isAvailable && handleToggleAvailability(ing.id, ing.isAvailable)}
-                  disabled={ing.isAvailable}
+                  onClick={() => handleToggleAvailability(ing.id, ing.isAvailable)}
                   variant={ing.isAvailable ? 'secondary' : 'white'}
                   size="sm"
-                  className={`w-full text-[10px] ${ing.isAvailable ? 'opacity-100' : ''}`}
+                  className={`w-full text-[10px]`}
                   icon={ing.isAvailable ? <CheckCircle size={14} /> : null}
                 >
                   {ing.isAvailable ? 'In Pantry' : 'Mark Available'}

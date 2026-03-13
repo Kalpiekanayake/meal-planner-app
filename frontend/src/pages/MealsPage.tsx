@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { api } from '../api/api';
-import { Plus, Trash2, Utensils, ChevronRight, X, Search, Heart } from 'lucide-react';
+import { Plus, Trash2, Utensils, ChevronRight, X, Search } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
@@ -192,12 +192,6 @@ const MealsPage: React.FC = () => {
                   <Utensils size={32} />
                 </div>
                 <div className="flex gap-2">
-                  <button 
-                    onClick={() => requireAuth(() => {})}
-                    className="w-10 h-10 rounded-full bg-slate-50 text-slate-300 hover:text-red-500 transition-all flex items-center justify-center"
-                  >
-                    <Heart size={18} />
-                  </button>
                   <button
                     onClick={() => handleDeleteMeal(meal.id)}
                     className="w-10 h-10 rounded-full bg-slate-50 text-slate-300 hover:text-red-500 transition-all flex items-center justify-center"

@@ -98,15 +98,15 @@ const HomePage: React.FC = () => {
                   <div className="w-12 h-12 bg-teal-50 rounded-2xl flex items-center justify-center text-teal-500 mb-4">
                     <Calendar size={24} />
                   </div>
-                  <div className="h-2 w-20 bg-slate-100 rounded-full mb-2"></div>
-                  <div className="h-2 w-12 bg-slate-50 rounded-full"></div>
+                  <h3 className="text-sm font-black text-slate-800 mb-1">Meals Planned</h3>
+                  <p className="text-[10px] text-slate-500 font-medium leading-tight">See how many meals are scheduled this week</p>
                 </div>
                 <div className="bg-white p-6 rounded-[2.5rem] shadow-xl border border-slate-50 transform hover:-translate-y-2 transition-transform duration-500 delay-100">
-                  <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-500 mb-4">
-                    <Utensils size={24} />
+                  <div className="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-500 mb-4">
+                    <Bell size={24} />
                   </div>
-                  <div className="h-2 w-16 bg-slate-100 rounded-full mb-2"></div>
-                  <div className="h-2 w-24 bg-slate-50 rounded-full"></div>
+                  <h3 className="text-sm font-black text-slate-800 mb-1">Notifications</h3>
+                  <p className="text-[10px] text-slate-500 font-medium leading-tight">Important alerts about missing ingredients</p>
                 </div>
               </div>
               <div className="space-y-4 pt-12">
@@ -114,15 +114,15 @@ const HomePage: React.FC = () => {
                   <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-500 mb-4">
                     <Apple size={24} />
                   </div>
-                  <div className="h-2 w-24 bg-slate-100 rounded-full mb-2"></div>
-                  <div className="h-2 w-16 bg-slate-50 rounded-full"></div>
+                  <h3 className="text-sm font-black text-slate-800 mb-1">Pantry Items</h3>
+                  <p className="text-[10px] text-slate-500 font-medium leading-tight">Ingredients currently tracked in your pantry</p>
                 </div>
                 <div className="bg-white p-6 rounded-[2.5rem] shadow-xl border border-slate-50 transform hover:-translate-y-2 transition-transform duration-500 delay-300">
                   <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500 mb-4">
                     <ShoppingBag size={24} />
                   </div>
-                  <div className="h-2 w-12 bg-slate-100 rounded-full mb-2"></div>
-                  <div className="h-2 w-20 bg-slate-50 rounded-full"></div>
+                  <h3 className="text-sm font-black text-slate-800 mb-1">Items to Buy</h3>
+                  <p className="text-[10px] text-slate-500 font-medium leading-tight">Ingredients waiting in your shopping list</p>
                 </div>
               </div>
             </div>
