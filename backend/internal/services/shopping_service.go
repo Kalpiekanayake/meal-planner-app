@@ -11,6 +11,7 @@ type ShoppingService interface {
 	GetItems(ctx context.Context, userID string) ([]db.ShoppingItemModel, error)
 	AddItem(ctx context.Context, name, category string, quantity *string, note *string, targetDate *time.Time, userID string) (*db.ShoppingItemModel, error)
 	MarkAsBought(ctx context.Context, id string, userID string) (*db.ShoppingItemModel, error)
+	MarkAsPending(ctx context.Context, id string, userID string) (*db.ShoppingItemModel, error)
 	DeleteItem(ctx context.Context, id string, userID string) (*db.ShoppingItemModel, error)
 }
 
@@ -35,6 +36,10 @@ func (s *shoppingService) AddItem(ctx context.Context, name, category string, qu
 
 func (s *shoppingService) MarkAsBought(ctx context.Context, id string, userID string) (*db.ShoppingItemModel, error) {
 	return s.repo.UpdateItemStatus(ctx, id, "bought", userID)
+}
+
+func (s *shoppingService) MarkAsPending(ctx context.Context, id string, userID string) (*db.ShoppingItemModel, error) {
+	return s.repo.UpdateItemStatus(ctx, id, "pending", userID)
 }
 
 func (s *shoppingService) DeleteItem(ctx context.Context, id string, userID string) (*db.ShoppingItemModel, error) {

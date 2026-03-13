@@ -57,6 +57,7 @@ func SetupRoutes(
 	protectedMux.HandleFunc("GET /shopping", shoppingHandler.GetItems)
 	protectedMux.HandleFunc("POST /shopping", shoppingHandler.CreateItem)
 	protectedMux.HandleFunc("PATCH /shopping/{id}/bought", shoppingHandler.MarkAsBought)
+	protectedMux.HandleFunc("PATCH /shopping/{id}/pending", shoppingHandler.MarkAsPending)
 	protectedMux.HandleFunc("DELETE /shopping/{id}", shoppingHandler.DeleteItem)
 
 	// Notification routes

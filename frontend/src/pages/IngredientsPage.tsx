@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { api } from '../api/api';
-import { Trash2, Apple, Search, ShoppingCart, Plus, X } from 'lucide-react';
+import { Trash2, Apple, Search, ShoppingCart, Plus, X, CheckCircle } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
@@ -69,7 +69,7 @@ const IngredientsPage: React.FC = () => {
     requireAuth(async () => {
       try {
         await api.createShoppingItem(ing.name, ing.category, ing.quantity);
-        showToast(`Added ${ing.name} to shopping list`, 'success');
+        showToast('Added to Shopping List', 'success');
       } catch (err) {
         showToast('Failed to add to shopping list', 'error');
       }
@@ -205,7 +205,11 @@ const IngredientsPage: React.FC = () => {
                     <Badge variant="primary" className="text-[9px]">
                       {ing.category}
                     </Badge>
-                    {!ing.isAvailable && (
+                    {ing.isAvailable ? (
+                      <Badge variant="success" className="text-[9px]">
+                        In Stock
+                      </Badge>
+                    ) : (
                       <Badge variant="warning" className="text-[9px]">
                         Out of Stock
                       </Badge>
@@ -222,24 +226,25 @@ const IngredientsPage: React.FC = () => {
 
               <div className="mt-8 pt-6 border-t border-slate-50 flex flex-col gap-3">
                 <Button
-                  onClick={() => handleToggleAvailability(ing.id, ing.isAvailable)}
+                  onClick={() => !ing.isAvailable && handleToggleAvailability(ing.id, ing.isAvailable)}
+                  disabled={ing.isAvailable}
                   variant={ing.isAvailable ? 'secondary' : 'white'}
                   size="sm"
-                  className="w-full text-[10px]"
+                  className={`w-full text-[10px] ${ing.isAvailable ? 'opacity-100' : ''}`}
+                  icon={ing.isAvailable ? <CheckCircle size={14} /> : null}
                 >
                   {ing.isAvailable ? 'In Pantry' : 'Mark Available'}
                 </Button>
-
-                {!ing.isAvailable && (
-                  <Button
-                    onClick={() => handleAddToShoppingList(ing)}
-                    size="sm"
-                    className="w-full text-[10px]"
-                    icon={<ShoppingCart size={14} />}
-                  >
-                    Buy This
-                  </Button>
-                )}
+                
+                <Button
+                  onClick={() => handleAddToShoppingList(ing)}
+                  variant="white"
+                  size="sm"
+                  className="w-full text-[10px]"
+                  icon={<ShoppingCart size={14} />}
+                >
+                  Buy This
+                </Button>
               </div>
             </Card>
           ))

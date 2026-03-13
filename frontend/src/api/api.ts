@@ -110,6 +110,8 @@ export const api = {
     }),
   markShoppingItemAsBought: (id: string) =>
     fetcher<ShoppingItem>(`/shopping/${id}/bought`, { method: 'PATCH' }),
+  markShoppingItemAsPending: (id: string) =>
+    fetcher<ShoppingItem>(`/shopping/${id}/pending`, { method: 'PATCH' }),
   deleteShoppingItem: (id: string) => fetcher<void>(`/shopping/${id}`, { method: 'DELETE' }),
 
   // Notifications
