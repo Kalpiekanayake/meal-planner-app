@@ -59,7 +59,7 @@ const HomePage: React.FC = () => {
               <span className="text-teal-500 text-glow-teal">shop smarter.</span>
             </h1>
             <p className="text-xl text-slate-500 font-medium max-w-2xl leading-relaxed">
-              Crave helps you decide what to eat, tracks your pantry, and generates shopping lists automatically. Take the stress out of "What's for dinner?"
+              Crave helps you plan meals, track pantry ingredients, and automatically create your shopping list.
             </p>
             <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start pt-4">
               {user ? (
@@ -67,7 +67,7 @@ const HomePage: React.FC = () => {
                   to="/planner"
                   className="px-10 py-5 bg-teal-500 text-white rounded-[2rem] font-black text-lg shadow-2xl shadow-teal-200 hover:bg-teal-600 transition-all active:scale-95 flex items-center gap-3"
                 >
-                  Go to Dashboard <ChevronRight size={24} />
+                  Start Planning <ChevronRight size={24} />
                 </Link>
               ) : (
                 <>
