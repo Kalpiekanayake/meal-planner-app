@@ -16,7 +16,14 @@ func NewShoppingHandler(service services.ShoppingService) *ShoppingHandler {
 }
 
 func (h *ShoppingHandler) GetItems(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("user_id").(string)
+	userID, ok := r.Context().Value("user_id").(string)
+	if !ok || userID == "" {
+		// Return empty list for guests
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte("[]"))
+		return
+	}
+
 	items, err := h.service.GetItems(r.Context(), userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -36,7 +43,12 @@ type createShoppingItemRequest struct {
 }
 
 func (h *ShoppingHandler) CreateItem(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("user_id").(string)
+	userID, ok := r.Context().Value("user_id").(string)
+	if !ok || userID == "" {
+		http.Error(w, "authentication required", http.StatusUnauthorized)
+		return
+	}
+
 	var req createShoppingItemRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
@@ -55,7 +67,12 @@ func (h *ShoppingHandler) CreateItem(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ShoppingHandler) MarkAsBought(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("user_id").(string)
+	userID, ok := r.Context().Value("user_id").(string)
+	if !ok || userID == "" {
+		http.Error(w, "authentication required", http.StatusUnauthorized)
+		return
+	}
+
 	id := r.PathValue("id")
 	if id == "" {
 		http.Error(w, "missing item ID", http.StatusBadRequest)
@@ -73,7 +90,12 @@ func (h *ShoppingHandler) MarkAsBought(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ShoppingHandler) DeleteItem(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("user_id").(string)
+	userID, ok := r.Context().Value("user_id").(string)
+	if !ok || userID == "" {
+		http.Error(w, "authentication required", http.StatusUnauthorized)
+		return
+	}
+
 	id := r.PathValue("id")
 	if id == "" {
 		http.Error(w, "missing item ID", http.StatusBadRequest)

@@ -21,7 +21,12 @@ type createPlannerRequest struct {
 }
 
 func (h *PlannerHandler) CreatePlannerEntry(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("user_id").(string)
+	userID, ok := r.Context().Value("user_id").(string)
+	if !ok || userID == "" {
+		http.Error(w, "authentication required", http.StatusUnauthorized)
+		return
+	}
+
 	var req createPlannerRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
@@ -40,7 +45,14 @@ func (h *PlannerHandler) CreatePlannerEntry(w http.ResponseWriter, r *http.Reque
 }
 
 func (h *PlannerHandler) GetAllEntries(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("user_id").(string)
+	userID, ok := r.Context().Value("user_id").(string)
+	if !ok || userID == "" {
+		// Return empty list for guests
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte("[]"))
+		return
+	}
+
 	entries, err := h.service.GetAllEntries(r.Context(), userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -52,7 +64,14 @@ func (h *PlannerHandler) GetAllEntries(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *PlannerHandler) GetEntriesByDay(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("user_id").(string)
+	userID, ok := r.Context().Value("user_id").(string)
+	if !ok || userID == "" {
+		// Return empty list for guests
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte("[]"))
+		return
+	}
+
 	day := r.PathValue("dayOfWeek")
 	if day == "" {
 		http.Error(w, "missing day of week", http.StatusBadRequest)
@@ -70,7 +89,12 @@ func (h *PlannerHandler) GetEntriesByDay(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *PlannerHandler) DeleteEntry(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("user_id").(string)
+	userID, ok := r.Context().Value("user_id").(string)
+	if !ok || userID == "" {
+		http.Error(w, "authentication required", http.StatusUnauthorized)
+		return
+	}
+
 	id := r.PathValue("id")
 	if id == "" {
 		http.Error(w, "missing entry ID", http.StatusBadRequest)

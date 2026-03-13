@@ -17,7 +17,12 @@ func NewNotificationHandler(service services.NotificationService) *NotificationH
 }
 
 func (h *NotificationHandler) Generate(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("user_id").(string)
+	userID, ok := r.Context().Value("user_id").(string)
+	if !ok || userID == "" {
+		http.Error(w, "authentication required", http.StatusUnauthorized)
+		return
+	}
+
 	err := h.service.GenerateNotifications(r.Context(), userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -29,7 +34,14 @@ func (h *NotificationHandler) Generate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *NotificationHandler) List(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("user_id").(string)
+	userID, ok := r.Context().Value("user_id").(string)
+	if !ok || userID == "" {
+		// Return empty list for guests
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte("[]"))
+		return
+	}
+
 	notifications, err := h.service.GetNotifications(r.Context(), userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -41,7 +53,12 @@ func (h *NotificationHandler) List(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *NotificationHandler) MarkAsRead(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("user_id").(string)
+	userID, ok := r.Context().Value("user_id").(string)
+	if !ok || userID == "" {
+		http.Error(w, "authentication required", http.StatusUnauthorized)
+		return
+	}
+
 	id := r.PathValue("id")
 	if id == "" {
 		http.Error(w, "missing notification ID", http.StatusBadRequest)
@@ -59,7 +76,12 @@ func (h *NotificationHandler) MarkAsRead(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *NotificationHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("user_id").(string)
+	userID, ok := r.Context().Value("user_id").(string)
+	if !ok || userID == "" {
+		http.Error(w, "authentication required", http.StatusUnauthorized)
+		return
+	}
+
 	id := r.PathValue("id")
 	if id == "" {
 		http.Error(w, "missing notification ID", http.StatusBadRequest)

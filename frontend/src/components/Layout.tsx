@@ -20,6 +20,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     { name: 'Meals', path: '/meals', icon: <Utensils size={20} />, active: location.pathname === '/meals' },
     { name: 'Pantry', path: '/ingredients', icon: <Apple size={20} />, active: location.pathname === '/ingredients' },
     { name: 'Shopping List', path: '/shopping', icon: <ShoppingBag size={20} />, active: location.pathname === '/shopping' },
+    { name: 'Notifications', path: '/notifications', icon: <Bell size={20} />, active: location.pathname === '/notifications' },
   ];
 
   const getInitials = (name: string) => {

@@ -34,6 +34,13 @@ const HomePage: React.FC = () => {
       icon: <ShoppingBag className="text-emerald-500" size={32} />,
       path: '/shopping',
       color: 'bg-emerald-50'
+    },
+    {
+      title: 'Smart Alerts',
+      desc: 'Get reminders for missing items and upcoming planned meals.',
+      icon: <Bell className="text-rose-500" size={32} />,
+      path: '/notifications',
+      color: 'bg-rose-50'
     }
   ];
 

@@ -15,7 +15,14 @@ func NewIngredientHandler(service services.IngredientService) *IngredientHandler
 }
 
 func (h *IngredientHandler) GetIngredients(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("user_id").(string)
+	userID, ok := r.Context().Value("user_id").(string)
+	if !ok || userID == "" {
+		// Return empty list for guests
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte("[]"))
+		return
+	}
+
 	ingredients, err := h.service.GetIngredients(r.Context(), userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -34,7 +41,12 @@ type createIngredientRequest struct {
 }
 
 func (h *IngredientHandler) CreateIngredient(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("user_id").(string)
+	userID, ok := r.Context().Value("user_id").(string)
+	if !ok || userID == "" {
+		http.Error(w, "authentication required", http.StatusUnauthorized)
+		return
+	}
+
 	var req createIngredientRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
@@ -53,7 +65,12 @@ func (h *IngredientHandler) CreateIngredient(w http.ResponseWriter, r *http.Requ
 }
 
 func (h *IngredientHandler) GetOrCreateIngredient(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("user_id").(string)
+	userID, ok := r.Context().Value("user_id").(string)
+	if !ok || userID == "" {
+		http.Error(w, "authentication required", http.StatusUnauthorized)
+		return
+	}
+
 	var req createIngredientRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
@@ -75,7 +92,12 @@ type updateIngredientAvailabilityRequest struct {
 }
 
 func (h *IngredientHandler) UpdateAvailability(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("user_id").(string)
+	userID, ok := r.Context().Value("user_id").(string)
+	if !ok || userID == "" {
+		http.Error(w, "authentication required", http.StatusUnauthorized)
+		return
+	}
+
 	id := r.PathValue("id")
 	if id == "" {
 		http.Error(w, "missing ingredient ID", http.StatusBadRequest)
@@ -99,7 +121,12 @@ func (h *IngredientHandler) UpdateAvailability(w http.ResponseWriter, r *http.Re
 }
 
 func (h *IngredientHandler) DeleteIngredient(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("user_id").(string)
+	userID, ok := r.Context().Value("user_id").(string)
+	if !ok || userID == "" {
+		http.Error(w, "authentication required", http.StatusUnauthorized)
+		return
+	}
+
 	id := r.PathValue("id")
 	if id == "" {
 		http.Error(w, "missing ingredient ID", http.StatusBadRequest)
@@ -116,7 +143,12 @@ func (h *IngredientHandler) DeleteIngredient(w http.ResponseWriter, r *http.Requ
 }
 
 func (h *IngredientHandler) LinkToMeal(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("user_id").(string)
+	userID, ok := r.Context().Value("user_id").(string)
+	if !ok || userID == "" {
+		http.Error(w, "authentication required", http.StatusUnauthorized)
+		return
+	}
+
 	mealID := r.PathValue("mealId")
 	ingredientID := r.PathValue("ingredientId")
 
