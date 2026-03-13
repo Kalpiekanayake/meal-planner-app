@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { api } from '../api/api';
 import { Calendar, Trash2, Plus, ChevronRight, ShoppingCart, AlertTriangle, CheckCircle2, Search, X, Coffee, Sun, Moon } from 'lucide-react';
@@ -16,6 +17,7 @@ const MEAL_TYPES = [
 ];
 
 const WeeklyPlannerPage: React.FC = () => {
+  const navigate = useNavigate();
   const { meals, planner, refreshData, loading, showToast, addMissingIngredientsToShoppingList, requireAuth } = useAppContext();
   const [day, setDay] = useState('Monday');
   const [mealType, setMealType] = useState('Lunch');
@@ -233,6 +235,8 @@ const WeeklyPlannerPage: React.FC = () => {
                     <div className="space-y-3">
                       {dayEntries.map(entry => {
                         const missingCount = getMissingIngredientsCount(entry.mealId);
+                        const meal = meals.find(m => m.id === entry.mealId);
+                        const hasIngredients = meal && meal.ingredients && meal.ingredients.length > 0;
 
                         return (
                           <Card
@@ -246,7 +250,17 @@ const WeeklyPlannerPage: React.FC = () => {
                               <X size={14} />
                             </button>
 
-                            <p className="font-black text-slate-800 leading-tight pr-4">{entry.meal?.name}</p>
+                            <div className="flex flex-col items-start gap-1 pr-4">
+                              <button
+                                onClick={() => navigate(`/meals?highlight=${entry.mealId}`)}
+                                className="font-black text-slate-800 leading-tight text-left hover:text-primary-600 transition-colors"
+                              >
+                                {entry.meal?.name}
+                              </button>
+                              {!hasIngredients && (
+                                <p className="text-[10px] font-bold text-slate-400 italic">Ingredients not linked yet</p>
+                              )}
+                            </div>
 
                             <div className="mt-4 pt-4 border-t border-slate-50 flex flex-col gap-3">      
                               {missingCount > 0 ? (

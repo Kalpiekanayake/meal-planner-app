@@ -89,18 +89,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return;
         }
 
-        await Promise.all(
-          missingIngredients.map(ing => 
-            api.createShoppingItem(
-              ing.name, 
-              ing.category || 'Other', 
-              ing.quantity, 
-              `Required for: ${meal.name}`
-            )
-          )
+        // Identify which items are already in the shopping list (case-insensitive)
+        const newItems = missingIngredients.filter(ing => 
+          !shoppingList.some(item => item.name.toLowerCase() === ing.name.toLowerCase())
         );
 
-        showToast(`Added ${missingIngredients.length} items to your shopping list`, 'success');
+        const existingCount = missingIngredients.length - newItems.length;
+
+        if (newItems.length > 0) {
+          // Add only the new items
+          await Promise.all(
+            newItems.map(ing => 
+              api.createShoppingItem(
+                ing.name, 
+                ing.category || 'Other', 
+                ing.quantity, 
+                `Required for: ${meal.name}`
+              )
+            )
+          );
+
+          if (existingCount > 0) {
+            showToast('Added missing items to Shopping List. Some items were already in your Shopping List.', 'success');
+          } else {
+            showToast('Added missing items to Shopping List', 'success');
+          }
+        } else {
+          // All items already exist
+          if (missingIngredients.length === 1) {
+            showToast(`${missingIngredients[0].name} is already in your Shopping List`, 'info');
+          } else {
+            showToast('All missing items were already in your Shopping List', 'info');
+          }
+        }
+
         refreshData();
       } catch (error) {
         console.error('Failed to add ingredients to shopping list', error);

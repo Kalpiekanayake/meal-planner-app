@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { api } from '../api/api';
 import { Plus, Trash2, Utensils, ChevronRight, X, Search } from 'lucide-react';
@@ -8,6 +9,8 @@ import { Input } from '../components/ui/Input';
 import { Badge } from '../components/ui/Badge';
 
 const MealsPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const highlightId = searchParams.get('highlight');
   const { meals, ingredients, refreshData, loading, showToast, requireAuth } = useAppContext();
   const [name, setName] = useState('');
   const [selectedMealId, setSelectedMealId] = useState<string | null>(null);
@@ -16,8 +19,29 @@ const MealsPage: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
+  const [highlightedMealId, setHighlightedMealId] = useState<string | null>(null);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (highlightId && !loading && meals.length > 0) {
+      setHighlightedMealId(highlightId);
+      
+      // Small delay to ensure the DOM is ready
+      const timer = setTimeout(() => {
+        const element = document.getElementById(highlightId);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 500);
+
+      const clearTimer = setTimeout(() => setHighlightedMealId(null), 3000);
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(clearTimer);
+      };
+    }
+  }, [highlightId, loading, meals.length]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -184,8 +208,9 @@ const MealsPage: React.FC = () => {
         ) : (
           filteredMeals.map((meal) => (
             <Card
+              id={meal.id}
               key={meal.id}
-              className="p-8 group flex flex-col"
+              className={`p-8 group flex flex-col transition-all duration-500 ${highlightedMealId === meal.id ? 'highlight-pulse shadow-2xl scale-[1.02] border-primary-200' : ''}`}
             >
               <div className="flex justify-between items-start mb-8">
                 <div className="w-16 h-16 bg-primary-50 text-primary-600 rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:bg-primary-500 group-hover:text-white group-hover:rotate-6 shadow-sm shadow-primary-50">

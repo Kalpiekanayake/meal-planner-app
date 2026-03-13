@@ -31,6 +31,19 @@
   .animate-bounce-in {
     animation: bounce-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
   }
+  
+  .highlight-pulse {
+    animation: highlight-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+}
+
+@keyframes highlight-pulse {
+  0%, 100% {
+    @apply ring-0;
+  }
+  50% {
+    @apply ring-4 ring-primary-500/30;
+  }
 }
 
 @keyframes bounce-in {
