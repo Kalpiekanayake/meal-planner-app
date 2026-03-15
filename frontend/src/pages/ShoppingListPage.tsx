@@ -272,12 +272,6 @@ const ShoppingListPage: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <Badge variant="neutral" className={`text-[8px] px-2 py-0.5 border-none ${
-                    item.status === 'bought' ? 'bg-slate-100 text-slate-300' : 'bg-slate-50 text-slate-400'
-                  }`}>
-                    {item.category}
-                  </Badge>
-                  
                   <button
                     onClick={() => handleDeleteItem(item.id, item.name)}
                     className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-200 hover:bg-red-50 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100 shrink-0"

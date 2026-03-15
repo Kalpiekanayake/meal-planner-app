@@ -83,6 +83,21 @@ const IngredientsPage: React.FC = () => {
     });
   };
 
+  const handleRemoveFromShoppingList = async (ingName: string) => {
+    requireAuth(async () => {
+      try {
+        const item = shoppingList.find(i => i.name.toLowerCase() === ingName.toLowerCase());
+        if (item) {
+          await api.deleteShoppingItem(item.id);
+          showToast('Removed from Shopping List', 'success');
+          refreshData();
+        }
+      } catch (err) {
+        showToast('Failed to remove from shopping list', 'error');
+      }
+    });
+  };
+
   const filteredIngredients = ingredients.filter(ing =>
     ing.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -255,6 +270,18 @@ const IngredientsPage: React.FC = () => {
                 >
                   {isInShoppingList(ing.name) ? 'In Shopping List' : 'Buy This'}
                 </Button>
+
+                {isInShoppingList(ing.name) && (
+                  <Button
+                    onClick={() => handleRemoveFromShoppingList(ing.name)}
+                    variant="ghost"
+                    size="sm"
+                    className="w-full text-[10px] text-red-400 hover:text-red-500 hover:bg-red-50"
+                    icon={<X size={14} />}
+                  >
+                    Remove from List
+                  </Button>
+                )}
               </div>
             </Card>
           ))

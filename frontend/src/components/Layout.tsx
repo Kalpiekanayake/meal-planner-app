@@ -33,9 +33,11 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       <header className="fixed top-0 inset-x-0 h-20 bg-white/80 backdrop-blur-xl border-b border-slate-100 z-50">
         <div className="max-w-7xl mx-auto h-full px-6 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary-400 to-primary-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary-100 rotate-3">
-              <ShoppingBag size={24} strokeWidth={2.5} />
-            </div>
+            <img 
+              src="/crave-logo.png" 
+              alt="Crave Logo" 
+              className="w-9 h-9 object-contain"
+            />
             <span className="text-2xl font-black tracking-tight text-slate-800">Crave</span>
           </Link>
 
@@ -203,9 +205,11 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       <footer className="bg-white border-t border-slate-100 py-10">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-primary-500 rounded-lg flex items-center justify-center text-white">
-              <ShoppingBag size={14} />
-            </div>
+            <img 
+              src="/crave-logo.png" 
+              alt="Crave Logo" 
+              className="w-6 h-6 object-contain"
+            />
             <span className="font-black text-slate-800">Crave</span>
           </div>
           <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">
