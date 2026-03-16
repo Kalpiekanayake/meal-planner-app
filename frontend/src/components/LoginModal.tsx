@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Lock, X, LogIn, UserPlus, ShoppingBag } from 'lucide-react';
+import { Lock, X, LogIn, UserPlus } from 'lucide-react';
 
 interface LoginModalProps {
   isOpen: boolean;

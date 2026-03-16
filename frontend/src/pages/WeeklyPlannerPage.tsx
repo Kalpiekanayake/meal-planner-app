@@ -2,12 +2,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { api } from '../api/api';
-import { Calendar, Trash2, Plus, ChevronRight, ShoppingCart, AlertTriangle, CheckCircle2, Search, X, Coffee, Sun, Moon } from 'lucide-react';
+import { Calendar, Plus, ChevronRight, ShoppingCart, AlertTriangle, CheckCircle2, X, Coffee, Sun, Moon } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
-import { Badge } from '../components/ui/Badge';
-import { SectionHeader } from '../components/ui/SectionHeader';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const MEAL_TYPES = [
