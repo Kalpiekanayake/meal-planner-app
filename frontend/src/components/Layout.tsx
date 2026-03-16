@@ -30,7 +30,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 selection:bg-primary-100 selection:text-primary-900">
       {/* Top Navigation Header */}
-      <header className="fixed top-0 inset-x-0 h-20 bg-white/80 backdrop-blur-xl border-b border-slate-100 z-50">
+      <header className="fixed top-0 inset-x-0 h-20 bg-white/80 backdrop-blur-xl border-b border-slate-100/50 shadow-sm shadow-slate-200/40 z-50">
         <div className="max-w-7xl mx-auto h-full px-6 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
             <img 
@@ -85,14 +85,14 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               <div className="flex items-center gap-3">
                 <Link
                   to="/login"
-                  className="hidden sm:flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all"
+                  className="hidden sm:flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-black text-slate-800 hover:bg-slate-50 transition-all"
                 >
                   <LogIn size={18} />
                   Sign In
                 </Link>
                 <Link
                   to="/register"
-                  className="flex items-center gap-2 px-6 py-2.5 bg-primary-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-primary-100 hover:bg-primary-600 transition-all active:scale-95"
+                  className="flex items-center gap-2 px-6 py-2.5 bg-primary-500 text-white rounded-full text-sm font-black shadow-lg shadow-primary-100 hover:bg-primary-600 transition-all active:scale-95"
                 >
                   <UserPlus size={18} />
                   Join Free

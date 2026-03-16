@@ -54,7 +54,7 @@ const HomePage: React.FC = () => {
               <Star size={14} fill="currentColor" />
               <span>Smart Meal Planning</span>
             </div>
-            <h1 className="text-5xl lg:text-7xl font-black text-slate-800 tracking-tight leading-[1.1]">
+            <h1 className="text-5xl lg:text-7xl font-black text-slate-800 tracking-[-0.03em] leading-[0.95] lg:leading-[1.05]">
               Plan meals, <br />
               <span className="text-teal-500 text-glow-teal">shop smarter.</span>
             </h1>
@@ -65,7 +65,7 @@ const HomePage: React.FC = () => {
               {user ? (
                 <Link
                   to="/planner"
-                  className="px-10 py-5 bg-teal-500 text-white rounded-[2rem] font-black text-lg shadow-2xl shadow-teal-200 hover:bg-teal-600 transition-all active:scale-95 flex items-center gap-3"
+                  className="px-10 py-5 bg-teal-500 text-white rounded-full font-black text-lg shadow-2xl shadow-teal-200 hover:bg-teal-600 transition-all active:scale-95 flex items-center gap-3"
                 >
                   Start Planning <ChevronRight size={24} />
                 </Link>
@@ -73,13 +73,13 @@ const HomePage: React.FC = () => {
                 <>
                   <Link
                     to="/register"
-                    className="px-10 py-5 bg-teal-500 text-white rounded-[2rem] font-black text-lg shadow-2xl shadow-teal-200 hover:bg-teal-600 transition-all active:scale-95 flex items-center gap-3"
+                    className="px-10 py-5 bg-teal-500 text-white rounded-full font-black text-lg shadow-2xl shadow-teal-200 hover:bg-teal-600 transition-all active:scale-95 flex items-center gap-3"
                   >
                     Start Planning Free <ChevronRight size={24} />
                   </Link>
                   <Link
                     to="/login"
-                    className="px-10 py-5 bg-white text-slate-700 border border-slate-100 rounded-[2rem] font-black text-lg shadow-xl shadow-slate-100 hover:bg-slate-50 transition-all active:scale-95"
+                    className="px-10 py-5 bg-white text-slate-800 border border-slate-100 rounded-full font-black text-lg shadow-xl shadow-slate-100 hover:bg-slate-50 transition-all active:scale-95"
                   >
                     Sign In
                   </Link>
