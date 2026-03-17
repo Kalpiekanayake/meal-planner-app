@@ -3,9 +3,11 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"meal-planner-backend/internal/repository"
 	"meal-planner-backend/prisma/db"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -41,6 +43,15 @@ type Claims struct {
 }
 
 func (s *authService) Register(ctx context.Context, name, email, password string) (*db.UserModel, error) {
+	email = strings.ToLower(strings.TrimSpace(email))
+	
+	// Check for existing user
+	existing, _ := s.repo.GetUserByEmail(ctx, email)
+	if existing != nil {
+		fmt.Printf("[AUTH] Signup attempt for already existing email: %s\n", email)
+		return nil, errors.New("email already in use")
+	}
+
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
@@ -50,14 +61,35 @@ func (s *authService) Register(ctx context.Context, name, email, password string
 }
 
 func (s *authService) Login(ctx context.Context, email, password string) (string, *db.UserModel, error) {
+	email = strings.ToLower(strings.TrimSpace(email))
+	
+	fmt.Printf("[AUTH] Login attempt for: %s\n", email)
+
 	user, err := s.repo.GetUserByEmail(ctx, email)
-	if err != nil {
+	if err != nil || user == nil {
+		fmt.Printf("[AUTH] User not found or DB error for %s: %v\n", email, err)
 		return "", nil, errors.New("invalid credentials")
 	}
 
+	// Try standard bcrypt comparison
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
-		return "", nil, errors.New("invalid credentials")
+		fmt.Printf("[AUTH] Bcrypt mismatch for %s. Checking plaintext fallback...\n", email)
+		
+		// FALLBACK: If plaintext exactly matches (migrated data issue)
+		if user.Password == password {
+			fmt.Printf("[AUTH] Plaintext fallback match for %s. Re-hashing...\n", email)
+			newHashed, hashErr := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+			if hashErr == nil {
+				s.repo.UpdateUserPassword(ctx, user.ID, string(newHashed))
+			}
+			// Don't return error, proceed to token generation
+		} else {
+			fmt.Printf("[AUTH] Both bcrypt and plaintext checks failed for %s\n", email)
+			return "", nil, errors.New("invalid credentials")
+		}
+	} else {
+		fmt.Printf("[AUTH] Login successful for: %s\n", email)
 	}
 
 	expirationTime := time.Now().Add(72 * time.Hour)
