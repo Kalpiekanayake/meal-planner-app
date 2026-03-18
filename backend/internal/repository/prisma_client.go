@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"fmt"
 	"meal-planner-backend/prisma/db"
 )
 
@@ -10,9 +11,11 @@ type PrismaRepository struct {
 
 func NewPrismaRepository() (*PrismaRepository, error) {
 	client := db.NewClient()
+	fmt.Println("Connecting to database...")
 	if err := client.Connect(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
+	fmt.Println("Successfully connected to database!")
 	return &PrismaRepository{Client: client}, nil
 }
 
