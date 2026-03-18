@@ -5,10 +5,14 @@ node_modules/
 .env
 
 # Prisma Client Go
-# Allow the folder and placeholder file to be tracked by Git
-# This ensures Go build finds the package
+# Allow the folder and placeholder
 !prisma/db/
 !prisma/db/placeholder.go
 
-# Ignore ALL generated Go files from Prisma (they should be generated on Choreo)
-prisma/db/*_gen.go
+# Track the platform-independent Go source code (types/client)
+# This is required for the project to compile
+!prisma/db/db_gen.go
+
+# IGNORE the large platform-specific engine binaries
+# These are generated at build time for the specific OS
+prisma/db/query-engine-*_gen.go
