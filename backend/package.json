@@ -1,4 +1,11 @@
+
+
 {
+
+  "scripts": {
+    "postinstall": "npx prisma generate"
+  },
+
   "devDependencies": {
     "prisma": "^4.16.1"
   }
