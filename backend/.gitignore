@@ -2,4 +2,9 @@ node_modules/
 # Keep environment variables out of version control
 .env
 # Prisma generated client
-prisma/db/
+# Allow the folder and placeholder file to be tracked by Git
+# This ensures Go build finds the package
+!prisma/db/
+!prisma/db/placeholder.go
+# Still ignore the large generated Go files
+prisma/db/*_gen.go
