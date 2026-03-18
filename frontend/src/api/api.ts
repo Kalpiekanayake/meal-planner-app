@@ -1,6 +1,6 @@
 import { Meal, Ingredient, PlannerEntry, Notification, ShoppingItem, User } from './types';
 
-const API_BASE_URL = 'https://6c905a3b-3aaf-44b8-9641-4c2e8a899abb-dev.e1-us-east-azure.choreoapis.dev/crave-meal-planner/backend-gl/v1.0';
+const API_BASE_URL = "https://6c905a3b-3aaf-44b8-9641-4c2e8a899abb-dev.e1-us-east-azure.choreoapis.dev/crave-meal-planner/backend-gl/v1.0";
 
 async function fetcher<T>(url: string, options?: RequestInit): Promise<T> {
   const token = localStorage.getItem('auth_token');
