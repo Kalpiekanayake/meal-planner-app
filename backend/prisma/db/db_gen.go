@@ -74,7 +74,8 @@ const (
 const datasources = `[{"name":"db","provider":"postgresql","activeProvider":"postgresql","url":{"fromEnvVar":"DATABASE_URL","value":""},"config":null}]`
 
 const schema = `generator client {
-  provider = "go run github.com/steebchen/prisma-client-go"
+  provider      = "go run github.com/steebchen/prisma-client-go"
+  binaryTargets = ["native", "debian-openssl-1.1.x", "debian-openssl-3.0.x", "linux-musl", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
