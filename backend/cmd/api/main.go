@@ -17,6 +17,7 @@ import (
 )
 
 func main() {
+
 	// Load .env file
 	godotenv.Load()
 
