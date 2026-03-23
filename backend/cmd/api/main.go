@@ -19,7 +19,10 @@ import (
 func main() {
 
 	// Load .env file
-	godotenv.Load()
+	err := godotenv.Load("prisma/.env")
+	if err != nil {
+		log.Printf("Failed to load prisma/.env: %v", err)
+	}
 
 	// 1. Setup repository (Prisma)
 	prismaRepo, err := repository.NewPrismaRepository()
