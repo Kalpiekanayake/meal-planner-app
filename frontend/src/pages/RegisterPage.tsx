@@ -23,7 +23,7 @@ const RegisterPage: React.FC = () => {
       await api.register(name, email, password);
       navigate('/login');
     } catch (err: any) {
-      setError('Failed to create account. Email might already be in use.');
+      setError(err.message || 'Failed to create account. Please try again.');
     } finally {
       setLoading(false);
     }

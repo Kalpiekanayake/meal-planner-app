@@ -1,11 +1,12 @@
 import { Meal, Ingredient, PlannerEntry, Notification, ShoppingItem, User } from './types';
 
-const API_BASE_URL = "https://6c905a3b-3aaf-44b8-9641-4c2e8a899abb-dev.e1-us-east-azure.choreoapis.dev/crave-meal-planner/backend-gl/v1.0";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "https://6c905a3b-3aaf-44b8-9641-4c2e8a899abb-dev.e1-us-east-azure.choreoapis.dev/crave-meal-planner/backend-gl/v1.0";
 
 async function fetcher<T>(url: string, options?: RequestInit): Promise<T> {
   const token = localStorage.getItem('auth_token');
   
-  console.log(`[API] ${options?.method || 'GET'} ${url}`, options?.body ? JSON.parse(options.body as string) : '');
+  console.log(`[API Request] ${options?.method || 'GET'} ${API_BASE_URL}${url}`, options?.body ? JSON.parse(options.body as string) : '');
+  
   try {
     const response = await fetch(`${API_BASE_URL}${url}`, {
       ...options,
@@ -24,8 +25,16 @@ async function fetcher<T>(url: string, options?: RequestInit): Promise<T> {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`[API Error] ${response.status} ${response.statusText}: ${errorText}`);
-      throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      console.error(`[API Error Response] ${response.status} ${response.statusText}:`, errorText);
+      // Try to parse error text if it's JSON, otherwise use the text
+      let errorMessage = errorText;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorJson.error || errorText;
+      } catch (e) {
+        // Not JSON
+      }
+      throw new Error(errorMessage || `API Error: ${response.status} ${response.statusText}`);
     }
 
     if (response.status === 204) {
@@ -35,8 +44,8 @@ async function fetcher<T>(url: string, options?: RequestInit): Promise<T> {
     const data = await response.json();
     console.log(`[API Success] ${url}`, data);
     return data;
-  } catch (error) {
-    console.error(`[API Fetch Error] ${url}`, error);
+  } catch (error: any) {
+    console.error(`[API Fetch Failure] ${url}:`, error.message);
     throw error;
   }
 }

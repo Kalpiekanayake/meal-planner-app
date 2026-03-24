@@ -21,7 +21,15 @@ func main() {
 	// Load .env file
 	err := godotenv.Load("prisma/.env")
 	if err != nil {
-		log.Printf("Failed to load prisma/.env: %v", err)
+		log.Printf("Note: Failed to load prisma/.env, using system environment variables: %v", err)
+	}
+
+	// Check for critical environment variables
+	if os.Getenv("JWT_SECRET") == "" {
+		log.Println("[WARNING] JWT_SECRET is not set! Using default insecure key.")
+	}
+	if os.Getenv("DATABASE_URL") == "" {
+		log.Println("[WARNING] DATABASE_URL is not set! Prisma might fail to connect.")
 	}
 
 	// 1. Setup repository (Prisma)
