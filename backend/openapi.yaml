@@ -1,0 +1,248 @@
+openapi: 3.0.1
+info:
+  title: Crave Meal Planner Backend
+  version: "1.0"
+paths:
+  /health:
+    get:
+      summary: Health check
+      x-choreo-auth-none: true
+      responses:
+        "200":
+          description: OK
+  /auth/register:
+    post:
+      summary: User Registration
+      x-choreo-auth-none: true
+      responses:
+        "200":
+          description: OK
+  /auth/login:
+    post:
+      summary: User Login
+      x-choreo-auth-none: true
+      responses:
+        "200":
+          description: OK
+  /auth/me:
+    get:
+      summary: Get current user info
+      responses:
+        "200":
+          description: OK
+  /meals:
+    get:
+      summary: List all meals
+      responses:
+        "200":
+          description: OK
+    post:
+      summary: Create a meal
+      responses:
+        "200":
+          description: OK
+  /meals/{id}:
+    get:
+      summary: Get meal by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+    delete:
+      summary: Delete a meal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+  /meals/get-or-create:
+    post:
+      summary: Get or create a meal by name
+      responses:
+        "200":
+          description: OK
+  /ingredients:
+    get:
+      summary: List all ingredients
+      responses:
+        "200":
+          description: OK
+    post:
+      summary: Create an ingredient
+      responses:
+        "200":
+          description: OK
+  /ingredients/get-or-create:
+    post:
+      summary: Get or create an ingredient by name
+      responses:
+        "200":
+          description: OK
+  /ingredients/{id}/availability:
+    patch:
+      summary: Update ingredient availability
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+  /ingredients/{id}:
+    delete:
+      summary: Delete an ingredient
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+  /meals/{mealId}/ingredients/{ingredientId}:
+    post:
+      summary: Link an ingredient to a meal
+      parameters:
+        - name: mealId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: ingredientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+  /planner:
+    get:
+      summary: List all planner entries
+      responses:
+        "200":
+          description: OK
+    post:
+      summary: Create a planner entry
+      responses:
+        "200":
+          description: OK
+  /planner/{dayOfWeek}:
+    get:
+      summary: Get planner entries for a day
+      parameters:
+        - name: dayOfWeek
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+  /planner/{id}:
+    delete:
+      summary: Delete a planner entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+  /shopping:
+    get:
+      summary: List all shopping items
+      responses:
+        "200":
+          description: OK
+    post:
+      summary: Create a shopping item
+      responses:
+        "200":
+          description: OK
+  /shopping/{id}/bought:
+    patch:
+      summary: Mark item as bought
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+  /shopping/{id}/pending:
+    patch:
+      summary: Mark item as pending
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+  /shopping/{id}:
+    delete:
+      summary: Delete a shopping item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+  /notifications/generate:
+    post:
+      summary: Generate notifications
+      responses:
+        "200":
+          description: OK
+  /notifications:
+    get:
+      summary: List all notifications
+      responses:
+        "200":
+          description: OK
+  /notifications/{id}/read:
+    patch:
+      summary: Mark notification as read
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+  /notifications/{id}:
+    delete:
+      summary: Delete a notification
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
