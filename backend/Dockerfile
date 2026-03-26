@@ -33,5 +33,7 @@ RUN npm install --omit=dev --ignore-scripts
 
 EXPOSE 8080
 
+USER 1001
+
 # Run migrations then start the server
 CMD npx prisma migrate deploy --schema ./prisma/schema.prisma && ./api
