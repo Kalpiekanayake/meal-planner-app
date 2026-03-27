@@ -31,7 +31,12 @@ COPY --from=builder /app/package.json ./package.json
 # Install Prisma CLI for running migrations (ignore postinstall which needs Go)
 RUN npm install --omit=dev --ignore-scripts
 
+# Set ownership for non-root user
+RUN chown -R 10014:10014 /app
+
 EXPOSE 8080
+
+USER 10014
 
 # Run migrations then start the server
 CMD npx prisma migrate deploy --schema ./prisma/schema.prisma && ./api
