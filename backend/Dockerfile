@@ -12,8 +12,8 @@ RUN go mod download
 # Copy source (including prisma schema)
 COPY . .
 
-# Generate Prisma client (with all platform binaries) and build
-RUN PRISMA_CLIENT_GO_BINARIES_ALL=true go run github.com/steebchen/prisma-client-go generate
+# Generate Prisma client and build (native engine matches the Debian runtime stage)
+RUN go run github.com/steebchen/prisma-client-go generate
 RUN go build -v -o api ./cmd/api/main.go
 
 # Runtime stage — use Debian to match generated Prisma engine binaries.
