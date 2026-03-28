@@ -28,8 +28,9 @@ COPY --from=builder /app/api .
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/package.json ./package.json
 
-# Install Prisma CLI for running migrations (ignore postinstall which needs Go)
-RUN npm install --omit=dev --ignore-scripts
+# Install Prisma CLI for running migrations (ignore postinstall to skip Go codegen,
+# then explicitly fetch Prisma engine binaries needed for migrations)
+RUN npm install --omit=dev --ignore-scripts && npx prisma version
 
 # Set ownership for non-root user
 RUN chown -R 10014:10014 /app
