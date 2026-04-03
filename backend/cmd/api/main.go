@@ -101,7 +101,7 @@ func main() {
 		port = "8080"
 	}
 
-	fmt.Printf("Server running on port %s 🚀\n", port)
+	fmt.Printf("Server running on port %s \n", port)
 	if err := http.ListenAndServe(":"+port, corsMux); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}

@@ -21,7 +21,7 @@ func SetupRoutes(
 	})
 
 	// Auth routes (Public)
-	mux.HandleFunc("/auth/register", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/backend/v1.0/auth/register", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusOK)
 			return
@@ -33,7 +33,7 @@ func SetupRoutes(
 		http.NotFound(w, r)
 	})
 
-	mux.HandleFunc("/auth/login", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/backend/v1.0/auth/login", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusOK)
 			return
