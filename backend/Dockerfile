@@ -40,4 +40,4 @@ EXPOSE 8080
 USER 10014
 
 # Run migrations then start the server
-CMD npx prisma migrate deploy --schema ./prisma/schema.prisma && ./api
+CMD ./api
