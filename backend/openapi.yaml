@@ -2,6 +2,7 @@ openapi: 3.0.1
 info:
   title: Crave Meal Planner Backend
   version: "1.0"
+
 paths:
   /health:
     get:
@@ -10,26 +11,48 @@ paths:
       responses:
         "200":
           description: OK
+
   /auth/register:
+    options:
+      summary: CORS preflight for user registration
+      x-choreo-auth-none: true
+      responses:
+        "200":
+          description: OK
     post:
       summary: User Registration
       x-choreo-auth-none: true
       responses:
         "200":
           description: OK
+
   /auth/login:
+    options:
+      summary: CORS preflight for user login
+      x-choreo-auth-none: true
+      responses:
+        "200":
+          description: OK
     post:
       summary: User Login
       x-choreo-auth-none: true
       responses:
         "200":
           description: OK
+
   /auth/me:
+    options:
+      summary: CORS preflight for current user info
+      x-choreo-auth-none: true
+      responses:
+        "200":
+          description: OK
     get:
       summary: Get current user info
       responses:
         "200":
           description: OK
+
   /meals:
     get:
       summary: List all meals
@@ -41,6 +64,7 @@ paths:
       responses:
         "200":
           description: OK
+
   /meals/{id}:
     get:
       summary: Get meal by ID
@@ -64,12 +88,14 @@ paths:
       responses:
         "200":
           description: OK
+
   /meals/get-or-create:
     post:
       summary: Get or create a meal by name
       responses:
         "200":
           description: OK
+
   /ingredients:
     get:
       summary: List all ingredients
@@ -81,12 +107,14 @@ paths:
       responses:
         "200":
           description: OK
+
   /ingredients/get-or-create:
     post:
       summary: Get or create an ingredient by name
       responses:
         "200":
           description: OK
+
   /ingredients/{id}/availability:
     patch:
       summary: Update ingredient availability
@@ -99,6 +127,7 @@ paths:
       responses:
         "200":
           description: OK
+
   /ingredients/{id}:
     delete:
       summary: Delete an ingredient
@@ -111,6 +140,7 @@ paths:
       responses:
         "200":
           description: OK
+
   /meals/{mealId}/ingredients/{ingredientId}:
     post:
       summary: Link an ingredient to a meal
@@ -128,6 +158,7 @@ paths:
       responses:
         "200":
           description: OK
+
   /planner:
     get:
       summary: List all planner entries
@@ -139,6 +170,7 @@ paths:
       responses:
         "200":
           description: OK
+
   /planner/{dayOfWeek}:
     get:
       summary: Get planner entries for a day
@@ -151,6 +183,7 @@ paths:
       responses:
         "200":
           description: OK
+
   /planner/{id}:
     delete:
       summary: Delete a planner entry
@@ -163,6 +196,7 @@ paths:
       responses:
         "200":
           description: OK
+
   /shopping:
     get:
       summary: List all shopping items
@@ -174,6 +208,7 @@ paths:
       responses:
         "200":
           description: OK
+
   /shopping/{id}/bought:
     patch:
       summary: Mark item as bought
@@ -186,6 +221,7 @@ paths:
       responses:
         "200":
           description: OK
+
   /shopping/{id}/pending:
     patch:
       summary: Mark item as pending
@@ -198,6 +234,7 @@ paths:
       responses:
         "200":
           description: OK
+
   /shopping/{id}:
     delete:
       summary: Delete a shopping item
@@ -210,18 +247,21 @@ paths:
       responses:
         "200":
           description: OK
+
   /notifications/generate:
     post:
       summary: Generate notifications
       responses:
         "200":
           description: OK
+
   /notifications:
     get:
       summary: List all notifications
       responses:
         "200":
           description: OK
+
   /notifications/{id}/read:
     patch:
       summary: Mark notification as read
@@ -234,6 +274,7 @@ paths:
       responses:
         "200":
           description: OK
+
   /notifications/{id}:
     delete:
       summary: Delete a notification
