@@ -20,10 +20,10 @@ func SetupRoutes(
 		w.Write([]byte("OK"))
 	})
 
-	// Main router for all app routes
+	// Main router for app routes
 	mainMux := http.NewServeMux()
 
-	// Auth routes (Public)
+	// Public auth routes
 	mainMux.HandleFunc("OPTIONS /auth/register", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
@@ -76,9 +76,15 @@ func SetupRoutes(
 	protectedMux.HandleFunc("PATCH /notifications/{id}/read", notificationHandler.MarkAsRead)
 	protectedMux.HandleFunc("DELETE /notifications/{id}", notificationHandler.Delete)
 
-	// Apply auth middleware to all protected routes
+	// Apply auth middleware to protected routes only
 	mainMux.Handle("/", authMiddleware(protectedMux))
 
-	// Choreo gateway prefix handling
+	// Local / direct access
+	mux.Handle("/", mainMux)
+
+	// Choreo gateway prefix
 	mux.Handle("/backend/v1.0/", http.StripPrefix("/backend/v1.0", mainMux))
+
+	// Choreo project-prefixed gateway
+	mux.Handle("/crave-meal-planner/backend/v1.0/", http.StripPrefix("/crave-meal-planner/backend/v1.0", mainMux))
 }
