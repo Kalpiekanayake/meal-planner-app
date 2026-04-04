@@ -20,13 +20,13 @@ User authentication (JWT-based)
 Cloud deployment (frontend + backend + database)
 
 🏗️ Project Structure
-meal-planner-app/
-│
-├── frontend/        # React frontend
-├── backend/         # Go backend
-├── backend/openapi.yaml
-├── frontend/dist/   # Built frontend (used for deployment)
-└── README.md
+  meal-planner-app/
+  │
+  ├── frontend/        # React frontend
+  ├── backend/         # Go backend
+  ├── backend/openapi.yaml
+  ├── frontend/dist/   # Built frontend (used for deployment)
+  └── README.md
 
 ☁️ Deployment
 The application is deployed using:
@@ -38,8 +38,10 @@ Neon for hosting the PostgreSQL database
 <img width="1050" height="601" alt="image" src="https://github.com/user-attachments/assets/50dab430-4c00-455d-aaa1-755d2ac28ba9" />
 Weekly meal planner interface
 
+
 <img width="1039" height="538" alt="image" src="https://github.com/user-attachments/assets/b79a3ca0-696e-4ce4-9a82-c7685de6ea50" />
 Pantry management system
+
 
 <img width="1357" height="546" alt="image" src="https://github.com/user-attachments/assets/d194ab21-6566-4a1c-ab4b-e86172db4ddd" />
 Choreo deployment dashboard
