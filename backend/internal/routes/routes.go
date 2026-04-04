@@ -20,9 +20,33 @@ func SetupRoutes(
 		w.Write([]byte("OK"))
 	})
 
+	// Main router for all app routes
+	mainMux := http.NewServeMux()
+
 	// Auth routes (Public)
-	mux.HandleFunc("POST /auth/register", authHandler.Register)
-	mux.HandleFunc("POST /auth/login", authHandler.Login)
+	mainMux.HandleFunc("/auth/register", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		if r.Method == http.MethodPost {
+			authHandler.Register(w, r)
+			return
+		}
+		http.NotFound(w, r)
+	})
+
+	mainMux.HandleFunc("/auth/login", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		if r.Method == http.MethodPost {
+			authHandler.Login(w, r)
+			return
+		}
+		http.NotFound(w, r)
+	})
 
 	// Protected routes
 	protectedMux := http.NewServeMux()
@@ -67,5 +91,8 @@ func SetupRoutes(
 	protectedMux.HandleFunc("DELETE /notifications/{id}", notificationHandler.Delete)
 
 	// Apply auth middleware to all protected routes
-	mux.Handle("/", authMiddleware(protectedMux))
+	mainMux.Handle("/", authMiddleware(protectedMux))
+
+	// Choreo gateway prefix handling
+	mux.Handle("/backend/v1.0/", http.StripPrefix("/backend/v1.0", mainMux))
 }

@@ -12,8 +12,8 @@ RUN go mod download
 # Copy source (including prisma schema)
 COPY . .
 
-# Generate Prisma client (with all platform binaries) and build
-RUN PRISMA_CLIENT_GO_BINARIES_ALL=true go run github.com/steebchen/prisma-client-go generate
+# Generate Prisma client and build (native engine matches the Debian runtime stage)
+RUN go run github.com/steebchen/prisma-client-go generate
 RUN go build -v -o api ./cmd/api/main.go
 
 # Runtime stage — use Debian to match generated Prisma engine binaries.
@@ -28,10 +28,16 @@ COPY --from=builder /app/api .
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/package.json ./package.json
 
-# Install Prisma CLI for running migrations (ignore postinstall which needs Go)
-RUN npm install --omit=dev --ignore-scripts
+# Install Prisma CLI for running migrations (ignore postinstall to skip Go codegen,
+# then explicitly fetch Prisma engine binaries needed for migrations)
+RUN npm install --omit=dev --ignore-scripts && npx prisma version
+
+# Set ownership for non-root user
+RUN chown -R 10014:10014 /app
 
 EXPOSE 8080
 
+USER 10014
+
 # Run migrations then start the server
-CMD npx prisma migrate deploy --schema ./prisma/schema.prisma && ./api
+CMD ./api
