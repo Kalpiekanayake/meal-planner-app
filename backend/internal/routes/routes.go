@@ -24,29 +24,15 @@ func SetupRoutes(
 	mainMux := http.NewServeMux()
 
 	// Auth routes (Public)
-	mainMux.HandleFunc("/auth/register", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-		if r.Method == http.MethodPost {
-			authHandler.Register(w, r)
-			return
-		}
-		http.NotFound(w, r)
+	mainMux.HandleFunc("OPTIONS /auth/register", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
 	})
+	mainMux.HandleFunc("POST /auth/register", authHandler.Register)
 
-	mainMux.HandleFunc("/auth/login", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-		if r.Method == http.MethodPost {
-			authHandler.Login(w, r)
-			return
-		}
-		http.NotFound(w, r)
+	mainMux.HandleFunc("OPTIONS /auth/login", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
 	})
+	mainMux.HandleFunc("POST /auth/login", authHandler.Login)
 
 	// Protected routes
 	protectedMux := http.NewServeMux()
